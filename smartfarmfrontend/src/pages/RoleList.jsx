@@ -1,226 +1,272 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  X,
+  ShieldCheck,
+  Loader2,
+  KeyRound,
+} from 'lucide-react';
 import api from '../services/api';
 
+const PROTECTED_ROLES = ['Super Admin', 'Admin', 'User'];
+
+/* ── Spinner ── */
+const Spinner = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+    <Loader2
+      size={32}
+      strokeWidth={2}
+      style={{ color: 'var(--primary)', animation: 'spin 0.9s linear infinite' }}
+    />
+  </div>
+);
+
+/* ── Toast ── */
+const Toast = ({ toast }) => (
+  <div className={`toast ${toast.type === 'error' ? 'error' : ''}`}>
+    {toast.type === 'error'
+      ? <XCircle size={16} strokeWidth={2} style={{ flexShrink: 0 }} />
+      : <CheckCircle size={16} strokeWidth={2} style={{ flexShrink: 0 }} />}
+    <span>{toast.message}</span>
+  </div>
+);
+
 const RoleList = () => {
-  const [roles, setRoles] = useState([]);
+  const [roles, setRoles]             = useState([]);
   const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
 
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('create');
-  const [selectedRole, setSelectedRole] = useState(null);
+  const [showModal, setShowModal]           = useState(false);
+  const [modalType, setModalType]           = useState('create');
+  const [selectedRole, setSelectedRole]     = useState(null);
 
-  // Form states
-  const [name, setName] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState([]);
-  const [formErrors, setFormErrors] = useState({});
+  const [name, setName]                                   = useState('');
+  const [selectedPermissions, setSelectedPermissions]     = useState([]);
+  const [formErrors, setFormErrors]                       = useState({});
 
-  // Toast notifications
   const [toasts, setToasts] = useState([]);
 
+  /* ── helpers ── */
   const addToast = (message, type = 'success') => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   };
 
   const fetchData = async () => {
     try {
       const [rolesRes, permissionsRes] = await Promise.all([
         api.get('/roles'),
-        api.get('/permissions')
+        api.get('/permissions'),
       ]);
-
-      if (rolesRes.data.status === 'success') {
-        setRoles(rolesRes.data.data);
-      }
-      if (permissionsRes.data.status === 'success') {
-        setPermissions(permissionsRes.data.data);
-      }
+      if (rolesRes.data.status === 'success')       setRoles(rolesRes.data.data);
+      if (permissionsRes.data.status === 'success') setPermissions(permissionsRes.data.data);
     } catch (err) {
-      console.error('Failed to load role management data:', err);
+      console.error(err);
       setError('Gagal memuat data peran & hak akses.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleOpenCreate = () => {
-    setModalType('create');
-    setSelectedRole(null);
-    setName('');
-    setSelectedPermissions([]);
+  const openCreate = () => {
+    setModalType('create'); setSelectedRole(null);
+    setName(''); setSelectedPermissions([]); setFormErrors({});
+    setShowModal(true);
+  };
+
+  const openEdit = (role) => {
+    setModalType('edit'); setSelectedRole(role);
+    setName(role.name); setSelectedPermissions([...role.permissions]);
     setFormErrors({});
     setShowModal(true);
   };
 
-  const handleOpenEdit = (role) => {
-    setModalType('edit');
-    setSelectedRole(role);
-    setName(role.name);
-    setSelectedPermissions([...role.permissions]);
-    setFormErrors({});
-    setShowModal(true);
-  };
+  const togglePermission = (permName) =>
+    setSelectedPermissions(prev =>
+      prev.includes(permName) ? prev.filter(p => p !== permName) : [...prev, permName]
+    );
 
-  const handlePermissionToggle = (permName) => {
-    if (selectedPermissions.includes(permName)) {
-      setSelectedPermissions(selectedPermissions.filter((p) => p !== permName));
-    } else {
-      setSelectedPermissions([...selectedPermissions, permName]);
-    }
-  };
-
-  const validateForm = () => {
+  const validate = () => {
     const errors = {};
-    if (!name.trim()) errors.name = 'Nama role wajib diisi.';
-    if (selectedPermissions.length === 0) {
-      errors.permissions = 'Pilih minimal 1 permission untuk ditautkan.';
-    }
+    if (!name.trim())                     errors.name = 'Nama role wajib diisi.';
+    if (selectedPermissions.length === 0) errors.permissions = 'Pilih minimal 1 permission.';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    const payload = {
-      name,
-      permissions: selectedPermissions,
-    };
-
+    if (!validate()) return;
+    const payload = { name, permissions: selectedPermissions };
     try {
       if (modalType === 'create') {
-        const response = await api.post('/roles', payload);
-        if (response.data.status === 'success') {
-          addToast('Role baru berhasil dibuat!');
-          setShowModal(false);
-          fetchData();
-        }
+        const res = await api.post('/roles', payload);
+        if (res.data.status === 'success') { addToast('Role baru berhasil dibuat!'); setShowModal(false); fetchData(); }
       } else {
-        const response = await api.put(`/roles/${selectedRole.id}`, payload);
-        if (response.data.status === 'success') {
-          addToast('Role berhasil diperbarui!');
-          setShowModal(false);
-          fetchData();
-        }
+        const res = await api.put(`/roles/${selectedRole.id}`, payload);
+        if (res.data.status === 'success') { addToast('Role berhasil diperbarui!'); setShowModal(false); fetchData(); }
       }
     } catch (err) {
-      console.error('Submit role error:', err);
-      const backendMsg = err.response?.data?.message || 'Terjadi kesalahan sistem.';
-      addToast(backendMsg, 'error');
+      addToast(err.response?.data?.message || 'Terjadi kesalahan sistem.', 'error');
     }
   };
 
   const handleDelete = async (role) => {
-    const protectedRoles = ['Super Admin', 'Admin', 'User'];
-    if (protectedRoles.includes(role.name)) {
-      addToast(`Role bawaan '${role.name}' dilindungi dan tidak dapat dihapus!`, 'error');
+    if (PROTECTED_ROLES.includes(role.name)) {
+      addToast(`Role bawaan '${role.name}' dilindungi dan tidak dapat dihapus.`, 'error');
       return;
     }
-
-    if (window.confirm(`Apakah Anda yakin ingin menghapus role '${role.name}'?`)) {
-      try {
-        const response = await api.delete(`/roles/${role.id}`);
-        if (response.data.status === 'success') {
-          addToast('Role berhasil dihapus!');
-          fetchData();
-        }
-      } catch (err) {
-        console.error('Delete role error:', err);
-        const backendMsg = err.response?.data?.message || 'Gagal menghapus role.';
-        addToast(backendMsg, 'error');
-      }
+    if (!window.confirm(`Hapus role '${role.name}'?`)) return;
+    try {
+      const res = await api.delete(`/roles/${role.id}`);
+      if (res.data.status === 'success') { addToast('Role berhasil dihapus!'); fetchData(); }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Gagal menghapus role.', 'error');
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '3px' }}></div>
-      </div>
-    );
-  }
+  if (loading) return <Spinner />;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="content-card">
+
+      {/* ── Header ── */}
       <div className="table-actions-row">
         <div>
-          <h2>Manajemen Role & Hak Akses</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
-            Tetapkan tingkatan hak akses (roles) serta daftar kemampuan (permissions) di dalamnya.
+          <h2 style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-heading)' }}>
+            Manajemen Role
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px', fontWeight: 500 }}>
+            Atur tingkatan hak akses dan kemampuan masing-masing role.
           </p>
         </div>
-
-        <button onClick={handleOpenCreate} className="btn-action-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>➕</span> Buat Role Baru
+        <button onClick={openCreate} className="btn-action-primary">
+          <Plus size={15} strokeWidth={2.5} />
+          Buat Role Baru
         </button>
       </div>
 
+      {/* ── Error ── */}
       {error && (
         <div className="alert-banner">
-          <span>⚠️</span>
+          <AlertTriangle size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Grid of Roles */}
-      <div className="roles-grid">
-        {roles.map((role) => (
-          <div key={role.id} className="role-item-card">
-            <div>
-              <div className="role-card-header">
-                <h3>{role.name}</h3>
-                <span className="role-user-count">{role.users_count} Users</span>
-              </div>
+      {/* ── Table ── */}
+      <div className="table-responsive">
+        <table className="custom-table">
+          <thead>
+            <tr>
+              <th>Nama Role</th>
+              <th style={{ width: '120px' }}>Pengguna</th>
+              <th>Permissions</th>
+              <th style={{ width: '96px', textAlign: 'center' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roles.length > 0 ? (
+              roles.map(role => {
+                const isProtected = PROTECTED_ROLES.includes(role.name);
+                return (
+                  <tr key={role.id}>
+                    {/* Role name */}
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '13px' }}>
+                          {role.name}
+                        </span>
+                        {isProtected && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                            fontSize: '10px', fontWeight: 700, textTransform: 'uppercase',
+                            letterSpacing: '0.07em', color: 'var(--text-muted)',
+                          }}>
+                            <ShieldCheck size={10} strokeWidth={2} />
+                            Protected
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-              <div className="role-card-permissions">
-                <p>Tautan Hak Akses ({role.permissions.length})</p>
-                <div className="pill-list">
-                  {role.permissions.map((p) => (
-                    <span key={p} className="pill">
-                      {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+                    {/* User count */}
+                    <td>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        fontSize: '12px', fontWeight: 700,
+                        color: 'var(--slate-500)',
+                      }}>
+                        {role.users_count} user{role.users_count !== 1 ? 's' : ''}
+                      </span>
+                    </td>
 
-            <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '16px', gap: '8px' }}>
-              <button onClick={() => handleOpenEdit(role)} className="btn-icon" title="Edit Role">
-                ✏️
-              </button>
-              <button 
-                onClick={() => handleDelete(role)} 
-                className="btn-icon delete" 
-                title="Hapus Role"
-                disabled={['Super Admin', 'Admin', 'User'].includes(role.name)}
-                style={['Super Admin', 'Admin', 'User'].includes(role.name) ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
-        ))}
+                    {/* Permissions pills */}
+                    <td>
+                      <div className="pill-list">
+                        {role.permissions.length > 0
+                          ? role.permissions.map(p => <span key={p} className="pill">{p}</span>)
+                          : <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>—</span>
+                        }
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                        <button onClick={() => openEdit(role)} className="btn-icon" title="Edit Role">
+                          <Pencil size={14} strokeWidth={2} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(role)}
+                          className="btn-icon delete"
+                          title="Hapus Role"
+                          disabled={isProtected}
+                          style={isProtected ? { opacity: 0.35, cursor: 'not-allowed' } : {}}
+                        >
+                          <Trash2 size={14} strokeWidth={2} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={4}>
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    gap: '10px', padding: '40px 20px', color: 'var(--text-muted)',
+                  }}>
+                    <KeyRound size={32} strokeWidth={1.5} style={{ opacity: 0.4 }} />
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Belum ada role.</span>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Modal overlay */}
+      {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h2>{modalType === 'create' ? 'Buat Role Baru' : `Edit Hak Akses: ${selectedRole?.name}`}</h2>
-              <button onClick={() => setShowModal(false)} className="btn-close">
-                &times;
+              <h2>
+                {modalType === 'create' ? 'Buat Role Baru' : `Edit Role: ${selectedRole?.name}`}
+              </h2>
+              <button onClick={() => setShowModal(false)} className="btn-icon" title="Tutup">
+                <X size={16} strokeWidth={2} />
               </button>
             </div>
 
@@ -233,28 +279,36 @@ const RoleList = () => {
                     id="role-name"
                     placeholder="Contoh: Operator Kebun"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={formErrors.name ? 'input-error' : ''}
-                    disabled={selectedRole?.name === 'Super Admin'} // Super Admin name is protected
+                    onChange={e => setName(e.target.value)}
+                    style={formErrors.name ? { borderColor: 'var(--red-500)' } : {}}
+                    disabled={selectedRole?.name === 'Super Admin'}
                   />
-                  {formErrors.name && <span className="error-text">{formErrors.name}</span>}
+                  {formErrors.name && (
+                    <span style={{ fontSize: '12px', color: 'var(--red-500)', fontWeight: 600 }}>
+                      {formErrors.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="input-group">
-                  <label>Pilih Asosiasi Permissions</label>
+                  <label>Pilih Permissions</label>
                   <div className="permission-checkbox-grid">
-                    {permissions.map((perm) => (
+                    {permissions.map(perm => (
                       <label key={perm.id} className="checkbox-item">
                         <input
                           type="checkbox"
                           checked={selectedPermissions.includes(perm.name)}
-                          onChange={() => handlePermissionToggle(perm.name)}
+                          onChange={() => togglePermission(perm.name)}
                         />
                         <span>{perm.name}</span>
                       </label>
                     ))}
                   </div>
-                  {formErrors.permissions && <span className="error-text">{formErrors.permissions}</span>}
+                  {formErrors.permissions && (
+                    <span style={{ fontSize: '12px', color: 'var(--red-500)', fontWeight: 600 }}>
+                      {formErrors.permissions}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -271,14 +325,12 @@ const RoleList = () => {
         </div>
       )}
 
-      {/* Toast notifications rendering */}
-      <div className="toast-container">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast ${t.type === 'error' ? 'error' : ''}`}>
-            <span className="toast-icon">{t.type === 'error' ? '❌' : '✅'}</span>
-            <span>{t.message}</span>
-          </div>
-        ))}
+      {/* ── Toasts ── */}
+      <div style={{
+        position: 'fixed', bottom: '28px', right: '28px',
+        display: 'flex', flexDirection: 'column', gap: '10px', zIndex: 999,
+      }}>
+        {toasts.map(t => <Toast key={t.id} toast={t} />)}
       </div>
     </div>
   );

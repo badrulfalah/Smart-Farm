@@ -1,27 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend
+  Tooltip, ResponsiveContainer
 } from 'recharts';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 /* ─────────────────────────────────────────
+   THEME CONFIGURATION
+───────────────────────────────────────── */
+const THEME_COLORS = {
+  dark: {
+    bg: '#080f1e',
+    cardBg: 'rgba(255,255,255,0.03)',
+    cardBorder: 'rgba(255,255,255,0.08)',
+    textMain: '#f1f5f9',
+    textMuted: '#94a3b8',
+    textFaint: '#475569',
+    tooltipBg: 'rgba(15, 23, 42, 0.95)',
+    tooltipBorder: 'rgba(255,255,255,0.1)',
+    gridStroke: 'rgba(255,255,255,0.05)',
+    shimmerStart: 'transparent',
+    shimmerMid: 'rgba(255,255,255,0.04)',
+    skeletonBase: 'rgba(255,255,255,0.08)',
+    errorBg: 'rgba(239,68,68,0.08)',
+    errorBorder: 'rgba(239,68,68,0.25)',
+    errorText: '#ef4444',
+  },
+  light: {
+    bg: '#f8fafc', // Slate 50
+    cardBg: '#ffffff',
+    cardBorder: 'rgba(0,0,0,0.06)',
+    textMain: '#1e293b', // Slate 800
+    textMuted: '#64748b', // Slate 500
+    textFaint: '#94a3b8', // Slate 400
+    tooltipBg: '#ffffff',
+    tooltipBorder: 'rgba(0,0,0,0.1)',
+    gridStroke: 'rgba(0,0,0,0.05)',
+    shimmerStart: 'transparent',
+    shimmerMid: 'rgba(0,0,0,0.05)',
+    skeletonBase: 'rgba(0,0,0,0.06)',
+    errorBg: 'rgba(254, 226, 226, 0.5)', // Red 100
+    errorBorder: 'rgba(254, 226, 226, 1)',
+    errorText: '#b91c1c',
+  }
+};
+
+/* ─────────────────────────────────────────
    CUSTOM TOOLTIP
 ───────────────────────────────────────── */
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, theme }) => {
+  const colors = THEME_COLORS[theme] || THEME_COLORS.dark;
   if (active && payload && payload.length) {
     return (
       <div style={{
-        background: 'rgba(15, 23, 42, 0.95)',
+        background: colors.tooltipBg,
         backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: `1px solid ${colors.tooltipBorder}`,
         borderRadius: '12px',
         padding: '12px 16px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+        boxShadow: theme === 'dark' ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 25px rgba(0,0,0,0.1)',
       }}>
         <p style={{
-          color: '#94a3b8', fontSize: '11px',
+          color: colors.textMuted, fontSize: '11px',
           fontWeight: 600, marginBottom: '8px',
           textTransform: 'uppercase', letterSpacing: '0.5px'
         }}>
@@ -37,11 +78,11 @@ const CustomTooltip = ({ active, payload, label }) => {
               borderRadius: '50%', background: entry.color,
               boxShadow: `0 0 6px ${entry.color}`
             }} />
-            <span style={{ color: '#cbd5e1', fontSize: '12px' }}>
+            <span style={{ color: colors.textMuted, fontSize: '12px' }}>
               {entry.name}:
             </span>
             <span style={{
-              color: '#fff', fontSize: '13px', fontWeight: 700
+              color: colors.textMain, fontSize: '13px', fontWeight: 700
             }}>
               {entry.value}
               {entry.name.includes('Moisture') ? '%' : '°C'}
@@ -57,43 +98,47 @@ const CustomTooltip = ({ active, payload, label }) => {
 /* ─────────────────────────────────────────
    SKELETON LOADER
 ───────────────────────────────────────── */
-const SkeletonCard = () => (
-  <div style={{
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: '20px',
-    padding: '24px',
-    overflow: 'hidden',
-    position: 'relative',
-  }}>
+const SkeletonCard = ({ theme }) => {
+  const colors = THEME_COLORS[theme] || THEME_COLORS.dark;
+  return (
     <div style={{
-      position: 'absolute', inset: 0,
-      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
-      animation: 'shimmer 1.5s infinite',
-    }} />
-    <div style={{
-      height: '14px', width: '60%',
-      background: 'rgba(255,255,255,0.08)',
-      borderRadius: '8px', marginBottom: '16px'
-    }} />
-    <div style={{
-      height: '40px', width: '40%',
-      background: 'rgba(255,255,255,0.08)',
-      borderRadius: '8px', marginBottom: '12px'
-    }} />
-    <div style={{
-      height: '10px', width: '80%',
-      background: 'rgba(255,255,255,0.05)',
-      borderRadius: '8px'
-    }} />
-  </div>
-);
+      background: colors.cardBg,
+      border: `1px solid ${colors.cardBorder}`,
+      borderRadius: '20px',
+      padding: '24px',
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: `linear-gradient(90deg, ${colors.shimmerStart}, ${colors.shimmerMid}, ${colors.shimmerStart})`,
+        animation: 'shimmer 1.5s infinite',
+      }} />
+      <div style={{
+        height: '14px', width: '60%',
+        background: colors.skeletonBase,
+        borderRadius: '8px', marginBottom: '16px'
+      }} />
+      <div style={{
+        height: '40px', width: '40%',
+        background: colors.skeletonBase,
+        borderRadius: '8px', marginBottom: '12px'
+      }} />
+      <div style={{
+        height: '10px', width: '80%',
+        background: colors.skeletonBase,
+        borderRadius: '8px'
+      }} />
+    </div>
+  );
+};
 
 /* ─────────────────────────────────────────
    STAT CARD
 ───────────────────────────────────────── */
-const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, suffix = '' }) => {
+const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, suffix = '', theme }) => {
   const [displayValue, setDisplayValue] = useState(0);
+  const colors = THEME_COLORS[theme] || THEME_COLORS.dark;
   const isNumber = typeof value === 'number';
 
   useEffect(() => {
@@ -112,26 +157,32 @@ const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, 
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      backdropFilter: 'blur(20px)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: colors.cardBg,
+      backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
+      border: `1px solid ${colors.cardBorder}`,
       borderRadius: '20px',
       padding: '24px',
       position: 'relative',
       overflow: 'hidden',
       cursor: 'default',
       transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-      boxShadow: `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`,
+      boxShadow: theme === 'dark' 
+        ? `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`
+        : `0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)`,
     }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-4px)';
         e.currentTarget.style.boxShadow =
-          `0 12px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1), 0 0 30px ${glowColor}20`;
+          theme === 'dark'
+            ? `0 12px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1), 0 0 30px ${glowColor}20`
+            : `0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)`;
       }}
       onMouseLeave={e => {
         e.currentTarget.style.transform = 'translateY(0)';
         e.currentTarget.style.boxShadow =
-          `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`;
+          theme === 'dark'
+            ? `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`
+            : `0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)`;
       }}
     >
       {/* Background gradient orb */}
@@ -146,7 +197,7 @@ const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
         <span style={{
           fontSize: '12px', fontWeight: 600,
-          color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.8px'
+          color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.8px'
         }}>
           {title}
         </span>
@@ -164,12 +215,12 @@ const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, 
       <div style={{ marginBottom: '12px' }}>
         <span style={{
           fontSize: '38px', fontWeight: 800,
-          color: '#f1f5f9', letterSpacing: '-1px', lineHeight: 1,
+          color: colors.textMain, letterSpacing: '-1px', lineHeight: 1,
         }}>
           {isNumber ? displayValue : value}
         </span>
         {suffix && (
-          <span style={{ fontSize: '16px', color: '#64748b', marginLeft: '4px' }}>
+          <span style={{ fontSize: '16px', color: colors.textMuted, marginLeft: '4px' }}>
             {suffix}
           </span>
         )}
@@ -186,7 +237,7 @@ const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, 
           }}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
-          <span style={{ fontSize: '11px', color: '#475569' }}>{trendLabel}</span>
+          <span style={{ fontSize: '11px', color: colors.textFaint }}>{trendLabel}</span>
         </div>
       )}
     </div>
@@ -202,6 +253,28 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // THEME SYNC LOGIC
+  const [theme, setTheme] = useState(() => {
+    // Initialize from DOM or localStorage
+    const domTheme = document.documentElement.getAttribute('data-theme');
+    return domTheme || localStorage.getItem('theme') || 'light';
+  });
+
+  useEffect(() => {
+    // Watch for attribute changes on <html> (triggered by AdminLayout)
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme') || 'light';
+          setTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
+  }, []);
 
   /* Live clock */
   useEffect(() => {
@@ -232,7 +305,7 @@ const Dashboard = () => {
   /* ── Styles injected once ── */
   useEffect(() => {
     const style = document.createElement('style');
-    style.id = 'dashboard-pro-styles';
+    style.id = 'dashboard-pro-styles-v2';
     style.textContent = `
       @keyframes shimmer {
         0%   { transform: translateX(-100%); }
@@ -246,42 +319,40 @@ const Dashboard = () => {
         0%, 100% { opacity: 1; transform: scale(1); }
         50%       { opacity: 0.5; transform: scale(1.3); }
       }
-      @keyframes glow-pulse {
-        0%, 100% { box-shadow: 0 0 8px rgba(16,185,129,0.4); }
-        50%       { box-shadow: 0 0 20px rgba(16,185,129,0.8); }
-      }
       .dash-pro-container * { box-sizing: border-box; }
       .dash-pro-container {
         min-height: 100vh;
-        background: #080f1e;
         font-family: 'Inter', -apple-system, sans-serif;
-        color: #f1f5f9;
         animation: fadeSlideUp 0.5s ease both;
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
     `;
-    if (!document.getElementById('dashboard-pro-styles')) {
+    if (!document.getElementById('dashboard-pro-styles-v2')) {
       document.head.appendChild(style);
     }
-    return () => document.getElementById('dashboard-pro-styles')?.remove();
+    return () => document.getElementById('dashboard-pro-styles-v2')?.remove();
   }, []);
+
+  // Get current colors
+  const colors = THEME_COLORS[theme] || THEME_COLORS.dark;
 
   /* ── Loading ── */
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh', background: '#080f1e',
+      <div className="dash-pro-container" style={{
+        minHeight: '100vh', background: colors.bg,
         display: 'flex', flexDirection: 'column', gap: '24px', padding: '32px',
       }}>
         <div style={{
           height: '80px',
-          background: 'rgba(255,255,255,0.03)',
+          background: colors.cardBg,
           borderRadius: '20px',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: `1px solid ${colors.cardBorder}`,
           position: 'relative', overflow: 'hidden',
         }}>
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)',
+            background: `linear-gradient(90deg, ${colors.shimmerStart}, ${colors.shimmerMid}, ${colors.shimmerStart})`,
             animation: 'shimmer 1.5s infinite',
           }} />
         </div>
@@ -290,11 +361,11 @@ const Dashboard = () => {
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '20px',
         }}>
-          {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+          {[...Array(4)].map((_, i) => <SkeletonCard key={i} theme={theme} />)}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-          <SkeletonCard />
-          <SkeletonCard />
+          <SkeletonCard theme={theme} />
+          <SkeletonCard theme={theme} />
         </div>
       </div>
     );
@@ -304,22 +375,22 @@ const Dashboard = () => {
   if (error) {
     return (
       <div style={{
-        minHeight: '100vh', background: '#080f1e',
+        minHeight: '100vh', background: colors.bg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <div style={{
-          background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.25)',
+          background: colors.errorBg,
+          border: `1px solid ${colors.errorBorder}`,
           borderRadius: '20px',
           padding: '40px 48px',
           textAlign: 'center',
           maxWidth: '420px',
         }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-          <h3 style={{ color: '#ef4444', marginBottom: '8px', fontSize: '18px' }}>
+          <h3 style={{ color: colors.errorText, marginBottom: '8px', fontSize: '18px' }}>
             Koneksi Gagal
           </h3>
-          <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.6 }}>{error}</p>
+          <p style={{ color: colors.textMuted, fontSize: '14px', lineHeight: 1.6 }}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
@@ -386,17 +457,23 @@ const Dashboard = () => {
 
   /* ─────────────── RENDER ─────────────── */
   return (
-    <div className="dash-pro-container" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="dash-pro-container" style={{ 
+      background: colors.bg,
+      padding: '28px', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: '24px' 
+    }}>
 
       {/* ── HEADER ── */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        background: 'rgba(255,255,255,0.02)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: colors.cardBg,
+        backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
+        border: `1px solid ${colors.cardBorder}`,
         borderRadius: '20px',
         padding: '20px 28px',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+        boxShadow: theme === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 3px 0 rgba(0,0,0,0.05)',
       }}>
         {/* Left */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -411,11 +488,11 @@ const Dashboard = () => {
             {(user?.name || 'A')[0].toUpperCase()}
           </div>
           <div>
-            <p style={{ color: '#64748b', fontSize: '12px', marginBottom: '2px' }}>
+            <p style={{ color: colors.textMuted, fontSize: '12px', marginBottom: '2px' }}>
               Dashboard Overview
             </p>
             <h1 style={{
-              fontSize: '20px', fontWeight: 700, color: '#f1f5f9',
+              fontSize: '20px', fontWeight: 700, color: colors.textMain,
               margin: 0, letterSpacing: '-0.3px',
             }}>
               Selamat Datang, {user?.name || 'Admin'} 👋
@@ -441,11 +518,11 @@ const Dashboard = () => {
           </div>
           <span style={{
             fontFamily: 'monospace', fontSize: '22px',
-            fontWeight: 700, color: '#f1f5f9', letterSpacing: '1px',
+            fontWeight: 700, color: colors.textMain, letterSpacing: '1px',
           }}>
             {formatTime(currentTime)}
           </span>
-          <span style={{ fontSize: '11px', color: '#475569' }}>
+          <span style={{ fontSize: '11px', color: colors.textFaint }}>
             {formatDate(currentTime)}
           </span>
         </div>
@@ -459,7 +536,7 @@ const Dashboard = () => {
       }}>
         {statCards.map((card, i) => (
           <div key={i} style={{ animation: `fadeSlideUp 0.5s ease ${i * 0.08}s both` }}>
-            <StatCard {...card} />
+            <StatCard {...card} theme={theme} />
           </div>
         ))}
       </div>
@@ -473,12 +550,12 @@ const Dashboard = () => {
 
         {/* Chart */}
         <div style={{
-          background: 'rgba(255,255,255,0.02)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: colors.cardBg,
+          backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
+          border: `1px solid ${colors.cardBorder}`,
           borderRadius: '20px',
           padding: '24px',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+          boxShadow: theme === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 3px 0 rgba(0,0,0,0.05)',
         }}>
           {/* Chart header */}
           <div style={{
@@ -488,11 +565,11 @@ const Dashboard = () => {
             <div>
               <h2 style={{
                 fontSize: '16px', fontWeight: 700,
-                color: '#f1f5f9', margin: '0 0 4px',
+                color: colors.textMain, margin: '0 0 4px',
               }}>
                 Live Telemetry Monitoring
               </h2>
-              <p style={{ fontSize: '12px', color: '#475569', margin: 0 }}>
+              <p style={{ fontSize: '12px', color: colors.textFaint, margin: 0 }}>
                 Sensor IoT — Soil Moisture & Temperature
               </p>
             </div>
@@ -504,7 +581,7 @@ const Dashboard = () => {
               ].map(({ color, label }) => (
                 <div key={label} style={{
                   display: 'flex', alignItems: 'center', gap: '5px',
-                  background: 'rgba(255,255,255,0.05)',
+                  background: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                   padding: '4px 10px', borderRadius: '20px',
                 }}>
                   <div style={{
@@ -512,7 +589,7 @@ const Dashboard = () => {
                     borderRadius: '50%', background: color,
                     boxShadow: `0 0 6px ${color}`,
                   }} />
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                  <span style={{ fontSize: '11px', color: colors.textMuted, fontWeight: 600 }}>
                     {label}
                   </span>
                 </div>
@@ -544,21 +621,21 @@ const Dashboard = () => {
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} vertical={false} />
                 <XAxis
                   dataKey="time"
-                  stroke="rgba(255,255,255,0.15)"
-                  tick={{ fill: '#475569', fontSize: 11 }}
+                  stroke={colors.gridStroke}
+                  tick={{ fill: colors.textMuted, fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  stroke="rgba(255,255,255,0.15)"
-                  tick={{ fill: '#475569', fontSize: 11 }}
+                  stroke={colors.gridStroke}
+                  tick={{ fill: colors.textMuted, fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip theme={theme} />} />
                 <Area
                   name="Soil Moisture (%)"
                   type="monotone"
@@ -568,7 +645,7 @@ const Dashboard = () => {
                   fillOpacity={1}
                   fill="url(#colorMoisture)"
                   dot={false}
-                  activeDot={{ r: 6, fill: '#10b981', stroke: '#080f1e', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#10b981', stroke: theme === 'dark' ? '#080f1e' : '#fff', strokeWidth: 2 }}
                 />
                 <Area
                   name="Temperature (°C)"
@@ -579,7 +656,7 @@ const Dashboard = () => {
                   fillOpacity={1}
                   fill="url(#colorTemp)"
                   dot={false}
-                  activeDot={{ r: 6, fill: '#f59e0b', stroke: '#080f1e', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#f59e0b', stroke: theme === 'dark' ? '#080f1e' : '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -588,20 +665,20 @@ const Dashboard = () => {
 
         {/* Recent Users */}
         <div style={{
-          background: 'rgba(255,255,255,0.02)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: colors.cardBg,
+          backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
+          border: `1px solid ${colors.cardBorder}`,
           borderRadius: '20px',
           padding: '24px',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+          boxShadow: theme === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 3px 0 rgba(0,0,0,0.05)',
           display: 'flex',
           flexDirection: 'column',
         }}>
           <div style={{ marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', margin: '0 0 4px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: colors.textMain, margin: '0 0 4px' }}>
               Recently Joined
             </h2>
-            <p style={{ fontSize: '12px', color: '#475569', margin: 0 }}>
+            <p style={{ fontSize: '12px', color: colors.textFaint, margin: 0 }}>
               {recent_users?.length || 0} pengguna baru
             </p>
           </div>
@@ -619,7 +696,7 @@ const Dashboard = () => {
                     cursor: 'default',
                     animation: `fadeSlideUp 0.4s ease ${idx * 0.06}s both`,
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                  onMouseEnter={e => e.currentTarget.style.background = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   {/* Avatar */}
@@ -640,13 +717,13 @@ const Dashboard = () => {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
                       fontWeight: 600, fontSize: '13px',
-                      color: '#e2e8f0', margin: '0 0 2px',
+                      color: colors.textMain, margin: '0 0 2px',
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
                       {ru.name}
                     </p>
                     <p style={{
-                      fontSize: '11px', color: '#475569', margin: 0,
+                      fontSize: '11px', color: colors.textFaint, margin: 0,
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
                       {ru.email}
@@ -655,8 +732,8 @@ const Dashboard = () => {
 
                   {/* Date */}
                   <span style={{
-                    fontSize: '10px', color: '#334155',
-                    background: 'rgba(255,255,255,0.05)',
+                    fontSize: '10px', color: colors.textFaint,
+                    background: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                     padding: '3px 8px', borderRadius: '8px',
                     whiteSpace: 'nowrap', flexShrink: 0,
                   }}>
@@ -670,7 +747,7 @@ const Dashboard = () => {
                 alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}>
                 <span style={{ fontSize: '32px' }}>👤</span>
-                <p style={{ color: '#334155', fontSize: '13px' }}>
+                <p style={{ color: colors.textFaint, fontSize: '13px' }}>
                   Belum ada pengguna baru
                 </p>
               </div>
@@ -683,9 +760,9 @@ const Dashboard = () => {
       <div style={{
         textAlign: 'center',
         padding: '12px',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
+        borderTop: `1px solid ${colors.cardBorder}`,
       }}>
-        <span style={{ fontSize: '11px', color: '#1e293b' }}>
+        <span style={{ fontSize: '11px', color: colors.textFaint }}>
           Smart Farm Management System © {new Date().getFullYear()} — All rights reserved
         </span>
       </div>
