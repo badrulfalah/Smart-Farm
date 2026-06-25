@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\PermissionController;
+use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/public/overview', [PublicController::class, 'overview']);
 
 // Protected routes (Requires Sanctum Token)
 Route::middleware('auth:sanctum')->group(function () {
@@ -31,10 +33,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
 
     // Users CRUD
-    Route::apiResource('users', UserController::class);
+    Route::apiResource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // Roles CRUD
-    Route::apiResource('roles', RoleController::class);
+    Route::apiResource('roles', RoleController::class)->only(['index', 'store', 'update', 'destroy']);
 
     // Permissions CRUD
     Route::apiResource('permissions', PermissionController::class)->only(['index', 'store', 'destroy']);

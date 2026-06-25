@@ -26,23 +26,27 @@ const THEME_COLORS = {
     errorBg: 'rgba(239,68,68,0.08)',
     errorBorder: 'rgba(239,68,68,0.25)',
     errorText: '#ef4444',
+    footerBg: 'rgba(255,255,255,0.03)',
+    footerBorder: 'rgba(255,255,255,0.06)',
   },
   light: {
-    bg: '#f8fafc', // Slate 50
+    bg: '#f1f5f9',
     cardBg: '#ffffff',
     cardBorder: 'rgba(0,0,0,0.06)',
-    textMain: '#1e293b', // Slate 800
-    textMuted: '#64748b', // Slate 500
-    textFaint: '#94a3b8', // Slate 400
+    textMain: '#1e293b',
+    textMuted: '#64748b',
+    textFaint: '#94a3b8',
     tooltipBg: '#ffffff',
     tooltipBorder: 'rgba(0,0,0,0.1)',
     gridStroke: 'rgba(0,0,0,0.05)',
     shimmerStart: 'transparent',
     shimmerMid: 'rgba(0,0,0,0.05)',
     skeletonBase: 'rgba(0,0,0,0.06)',
-    errorBg: 'rgba(254, 226, 226, 0.5)', // Red 100
+    errorBg: 'rgba(254, 226, 226, 0.5)',
     errorBorder: 'rgba(254, 226, 226, 1)',
     errorText: '#b91c1c',
+    footerBg: '#ffffff',
+    footerBorder: 'rgba(0,0,0,0.06)',
   }
 };
 
@@ -57,8 +61,8 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
         background: colors.tooltipBg,
         backdropFilter: 'blur(12px)',
         border: `1px solid ${colors.tooltipBorder}`,
-        borderRadius: '12px',
-        padding: '12px 16px',
+        borderRadius: '16px',
+        padding: '14px 18px',
         boxShadow: theme === 'dark' ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 25px rgba(0,0,0,0.1)',
       }}>
         <p style={{
@@ -81,11 +85,8 @@ const CustomTooltip = ({ active, payload, label, theme }) => {
             <span style={{ color: colors.textMuted, fontSize: '12px' }}>
               {entry.name}:
             </span>
-            <span style={{
-              color: colors.textMain, fontSize: '13px', fontWeight: 700
-            }}>
-              {entry.value}
-              {entry.name.includes('Moisture') ? '%' : '°C'}
+            <span style={{ color: colors.textMain, fontSize: '13px', fontWeight: 700 }}>
+              {entry.value}{entry.name.includes('Moisture') ? '%' : '°C'}
             </span>
           </div>
         ))}
@@ -104,7 +105,7 @@ const SkeletonCard = ({ theme }) => {
     <div style={{
       background: colors.cardBg,
       border: `1px solid ${colors.cardBorder}`,
-      borderRadius: '20px',
+      borderRadius: '24px',
       padding: '24px',
       overflow: 'hidden',
       position: 'relative',
@@ -114,21 +115,9 @@ const SkeletonCard = ({ theme }) => {
         background: `linear-gradient(90deg, ${colors.shimmerStart}, ${colors.shimmerMid}, ${colors.shimmerStart})`,
         animation: 'shimmer 1.5s infinite',
       }} />
-      <div style={{
-        height: '14px', width: '60%',
-        background: colors.skeletonBase,
-        borderRadius: '8px', marginBottom: '16px'
-      }} />
-      <div style={{
-        height: '40px', width: '40%',
-        background: colors.skeletonBase,
-        borderRadius: '8px', marginBottom: '12px'
-      }} />
-      <div style={{
-        height: '10px', width: '80%',
-        background: colors.skeletonBase,
-        borderRadius: '8px'
-      }} />
+      <div style={{ height: '14px', width: '60%', background: colors.skeletonBase, borderRadius: '8px', marginBottom: '16px' }} />
+      <div style={{ height: '40px', width: '40%', background: colors.skeletonBase, borderRadius: '8px', marginBottom: '12px' }} />
+      <div style={{ height: '10px', width: '80%', background: colors.skeletonBase, borderRadius: '8px' }} />
     </div>
   );
 };
@@ -156,66 +145,65 @@ const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, 
   }, [value, isNumber]);
 
   return (
-    <div style={{
-      background: colors.cardBg,
-      backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
-      border: `1px solid ${colors.cardBorder}`,
-      borderRadius: '20px',
-      padding: '24px',
-      position: 'relative',
-      overflow: 'hidden',
-      cursor: 'default',
-      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-      boxShadow: theme === 'dark' 
-        ? `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`
-        : `0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)`,
-    }}
+    <div
+      style={{
+        background: colors.cardBg,
+        backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
+        border: `1px solid ${colors.cardBorder}`,
+        borderRadius: '24px',
+        padding: '24px',
+        position: 'relative',
+        overflow: 'hidden',
+        cursor: 'default',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        boxShadow: theme === 'dark'
+          ? `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`
+          : `0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)`,
+      }}
       onMouseEnter={e => {
         e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow =
-          theme === 'dark'
-            ? `0 12px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1), 0 0 30px ${glowColor}20`
-            : `0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)`;
+        e.currentTarget.style.boxShadow = theme === 'dark'
+          ? `0 16px 40px rgba(0,0,0,0.35), 0 0 30px ${glowColor}25`
+          : `0 16px 32px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06)`;
       }}
       onMouseLeave={e => {
         e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow =
-          theme === 'dark'
-            ? `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`
-            : `0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)`;
+        e.currentTarget.style.boxShadow = theme === 'dark'
+          ? `0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)`
+          : `0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)`;
       }}
     >
-      {/* Background gradient orb */}
+      {/* Background orb */}
       <div style={{
-        position: 'absolute', top: '-30px', right: '-30px',
-        width: '120px', height: '120px', borderRadius: '50%',
-        background: gradient, opacity: 0.15, filter: 'blur(20px)',
+        position: 'absolute', top: '-40px', right: '-40px',
+        width: '140px', height: '140px', borderRadius: '50%',
+        background: gradient, opacity: 0.12, filter: 'blur(28px)',
         pointerEvents: 'none',
       }} />
 
       {/* Top row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
         <span style={{
-          fontSize: '12px', fontWeight: 600,
-          color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.8px'
+          fontSize: '11px', fontWeight: 700,
+          color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.9px'
         }}>
           {title}
         </span>
         <div style={{
-          width: '40px', height: '40px', borderRadius: '12px',
+          width: '42px', height: '42px', borderRadius: '14px',
           background: gradient, display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          fontSize: '18px', boxShadow: `0 4px 12px ${glowColor}40`,
+          fontSize: '19px', boxShadow: `0 6px 16px ${glowColor}45`,
         }}>
           {icon}
         </div>
       </div>
 
       {/* Value */}
-      <div style={{ marginBottom: '12px' }}>
+      <div style={{ marginBottom: '14px' }}>
         <span style={{
-          fontSize: '38px', fontWeight: 800,
-          color: colors.textMain, letterSpacing: '-1px', lineHeight: 1,
+          fontSize: '40px', fontWeight: 800,
+          color: colors.textMain, letterSpacing: '-1.5px', lineHeight: 1,
         }}>
           {isNumber ? displayValue : value}
         </span>
@@ -233,7 +221,7 @@ const StatCard = ({ title, value, icon, gradient, glowColor, trend, trendLabel, 
             fontSize: '11px', fontWeight: 700,
             color: trend >= 0 ? '#10b981' : '#ef4444',
             background: trend >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-            padding: '2px 8px', borderRadius: '20px',
+            padding: '3px 9px', borderRadius: '20px',
           }}>
             {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
           </span>
@@ -253,16 +241,13 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // THEME SYNC LOGIC
+
   const [theme, setTheme] = useState(() => {
-    // Initialize from DOM or localStorage
     const domTheme = document.documentElement.getAttribute('data-theme');
     return domTheme || localStorage.getItem('theme') || 'light';
   });
 
   useEffect(() => {
-    // Watch for attribute changes on <html> (triggered by AdminLayout)
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
@@ -271,18 +256,15 @@ const Dashboard = () => {
         }
       });
     });
-
     observer.observe(document.documentElement, { attributes: true });
     return () => observer.disconnect();
   }, []);
 
-  /* Live clock */
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  /* Fetch data */
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -302,38 +284,39 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  /* ── Styles injected once ── */
   useEffect(() => {
     const style = document.createElement('style');
-    style.id = 'dashboard-pro-styles-v2';
+    style.id = 'dashboard-pro-styles-v3';
     style.textContent = `
       @keyframes shimmer {
         0%   { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
       }
       @keyframes fadeSlideUp {
-        from { opacity: 0; transform: translateY(20px); }
+        from { opacity: 0; transform: translateY(16px); }
         to   { opacity: 1; transform: translateY(0); }
       }
       @keyframes pulse-dot {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50%       { opacity: 0.5; transform: scale(1.3); }
+        50%       { opacity: 0.5; transform: scale(1.4); }
+      }
+      @keyframes float-badge {
+        0%, 100% { transform: translateY(0px); }
+        50%       { transform: translateY(-2px); }
       }
       .dash-pro-container * { box-sizing: border-box; }
       .dash-pro-container {
-        min-height: 100vh;
-        font-family: 'Inter', -apple-system, sans-serif;
-        animation: fadeSlideUp 0.5s ease both;
-        transition: background-color 0.3s ease, color 0.3s ease;
+        font-family: 'DM Sans', -apple-system, sans-serif;
+        animation: fadeSlideUp 0.45s ease both;
+        transition: background-color 0.3s ease;
       }
     `;
-    if (!document.getElementById('dashboard-pro-styles-v2')) {
+    if (!document.getElementById('dashboard-pro-styles-v3')) {
       document.head.appendChild(style);
     }
-    return () => document.getElementById('dashboard-pro-styles-v2')?.remove();
+    return () => document.getElementById('dashboard-pro-styles-v3')?.remove();
   }, []);
 
-  // Get current colors
   const colors = THEME_COLORS[theme] || THEME_COLORS.dark;
 
   /* ── Loading ── */
@@ -341,13 +324,11 @@ const Dashboard = () => {
     return (
       <div className="dash-pro-container" style={{
         minHeight: '100vh', background: colors.bg,
-        display: 'flex', flexDirection: 'column', gap: '24px', padding: '32px',
+        display: 'flex', flexDirection: 'column', gap: '20px', padding: '28px',
       }}>
         <div style={{
-          height: '80px',
-          background: colors.cardBg,
-          borderRadius: '20px',
-          border: `1px solid ${colors.cardBorder}`,
+          height: '84px', background: colors.cardBg,
+          borderRadius: '24px', border: `1px solid ${colors.cardBorder}`,
           position: 'relative', overflow: 'hidden',
         }}>
           <div style={{
@@ -356,14 +337,10 @@ const Dashboard = () => {
             animation: 'shimmer 1.5s infinite',
           }} />
         </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '20px',
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
           {[...Array(4)].map((_, i) => <SkeletonCard key={i} theme={theme} />)}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
           <SkeletonCard theme={theme} />
           <SkeletonCard theme={theme} />
         </div>
@@ -381,25 +358,21 @@ const Dashboard = () => {
         <div style={{
           background: colors.errorBg,
           border: `1px solid ${colors.errorBorder}`,
-          borderRadius: '20px',
+          borderRadius: '28px',
           padding: '40px 48px',
           textAlign: 'center',
           maxWidth: '420px',
         }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-          <h3 style={{ color: colors.errorText, marginBottom: '8px', fontSize: '18px' }}>
-            Koneksi Gagal
-          </h3>
+          <h3 style={{ color: colors.errorText, marginBottom: '8px', fontSize: '18px' }}>Koneksi Gagal</h3>
           <p style={{ color: colors.textMuted, fontSize: '14px', lineHeight: 1.6 }}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
-              marginTop: '24px',
-              padding: '10px 28px',
+              marginTop: '24px', padding: '10px 28px',
               background: 'linear-gradient(135deg, #10b981, #059669)',
-              border: 'none', borderRadius: '12px',
-              color: '#fff', fontWeight: 600, cursor: 'pointer',
-              fontSize: '14px',
+              border: 'none', borderRadius: '14px',
+              color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '14px',
             }}
           >
             Coba Lagi
@@ -455,14 +428,15 @@ const Dashboard = () => {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  /* ─────────────── RENDER ─────────────── */
+  /* ── RENDER ── */
   return (
-    <div className="dash-pro-container" style={{ 
+    <div className="dash-pro-container" style={{
       background: colors.bg,
-      padding: '28px', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: '24px' 
+      padding: '0',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      minHeight: '100%',
     }}>
 
       {/* ── HEADER ── */}
@@ -471,58 +445,66 @@ const Dashboard = () => {
         background: colors.cardBg,
         backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
         border: `1px solid ${colors.cardBorder}`,
-        borderRadius: '20px',
+        borderRadius: '24px',
         padding: '20px 28px',
-        boxShadow: theme === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 3px 0 rgba(0,0,0,0.05)',
+        boxShadow: theme === 'dark'
+          ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.2)'
+          : '0 2px 12px rgba(0,0,0,0.05)',
       }}>
         {/* Left */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* Avatar */}
           <div style={{
-            width: '48px', height: '48px', borderRadius: '14px',
+            width: '50px', height: '50px', borderRadius: '16px',
             background: 'linear-gradient(135deg, #10b981, #059669)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '20px', fontWeight: 700, color: '#fff',
-            boxShadow: '0 4px 12px rgba(16,185,129,0.4)',
+            fontSize: '20px', fontWeight: 800, color: '#fff',
+            boxShadow: '0 6px 18px rgba(16,185,129,0.4)',
+            letterSpacing: '-0.5px',
           }}>
             {(user?.name || 'A')[0].toUpperCase()}
           </div>
           <div>
-            <p style={{ color: colors.textMuted, fontSize: '12px', marginBottom: '2px' }}>
+            <p style={{ color: colors.textMuted, fontSize: '11px', marginBottom: '3px', fontWeight: 600, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
               Dashboard Overview
             </p>
             <h1 style={{
-              fontSize: '20px', fontWeight: 700, color: colors.textMain,
-              margin: 0, letterSpacing: '-0.3px',
+              fontSize: '20px', fontWeight: 800, color: colors.textMain,
+              margin: 0, letterSpacing: '-0.5px',
             }}>
               Selamat Datang, {user?.name || 'Admin'} 👋
             </h1>
           </div>
         </div>
 
-        {/* Right — clock + live badge */}
+        {/* Right — clock */}
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '7px',
+            background: 'rgba(16,185,129,0.1)',
+            border: '1px solid rgba(16,185,129,0.2)',
+            padding: '5px 12px', borderRadius: '20px',
+            animation: 'float-badge 3s ease-in-out infinite',
+          }}>
             <div style={{
-              width: '8px', height: '8px', borderRadius: '50%',
+              width: '7px', height: '7px', borderRadius: '50%',
               background: '#10b981',
               animation: 'pulse-dot 2s ease-in-out infinite',
-              boxShadow: '0 0 8px rgba(16,185,129,0.6)',
+              boxShadow: '0 0 8px rgba(16,185,129,0.7)',
             }} />
             <span style={{
-              fontSize: '11px', fontWeight: 700, color: '#10b981',
-              textTransform: 'uppercase', letterSpacing: '0.8px',
+              fontSize: '10px', fontWeight: 800, color: '#10b981',
+              textTransform: 'uppercase', letterSpacing: '0.9px',
             }}>
               System Online
             </span>
           </div>
           <span style={{
-            fontFamily: 'monospace', fontSize: '22px',
-            fontWeight: 700, color: colors.textMain, letterSpacing: '1px',
+            fontFamily: 'monospace', fontSize: '24px',
+            fontWeight: 800, color: colors.textMain, letterSpacing: '2px',
           }}>
             {formatTime(currentTime)}
           </span>
-          <span style={{ fontSize: '11px', color: colors.textFaint }}>
+          <span style={{ fontSize: '11px', color: colors.textFaint, fontWeight: 500 }}>
             {formatDate(currentTime)}
           </span>
         </div>
@@ -532,7 +514,7 @@ const Dashboard = () => {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '20px',
+        gap: '14px',
       }}>
         {statCards.map((card, i) => (
           <div key={i} style={{ animation: `fadeSlideUp 0.5s ease ${i * 0.08}s both` }}>
@@ -545,61 +527,49 @@ const Dashboard = () => {
       <div style={{
         display: 'grid',
         gridTemplateColumns: '2fr 1fr',
-        gap: '20px',
+        gap: '14px',
       }}>
 
-        {/* Chart */}
+        {/* Chart Card */}
         <div style={{
           background: colors.cardBg,
           backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
           border: `1px solid ${colors.cardBorder}`,
-          borderRadius: '20px',
-          padding: '24px',
-          boxShadow: theme === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 3px 0 rgba(0,0,0,0.05)',
+          borderRadius: '24px',
+          padding: '26px',
+          boxShadow: theme === 'dark'
+            ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.2)'
+            : '0 2px 12px rgba(0,0,0,0.05)',
         }}>
-          {/* Chart header */}
           <div style={{
             display: 'flex', justifyContent: 'space-between',
             alignItems: 'center', marginBottom: '24px',
           }}>
             <div>
-              <h2 style={{
-                fontSize: '16px', fontWeight: 700,
-                color: colors.textMain, margin: '0 0 4px',
-              }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: colors.textMain, margin: '0 0 4px' }}>
                 Live Telemetry Monitoring
               </h2>
-              <p style={{ fontSize: '12px', color: colors.textFaint, margin: 0 }}>
+              <p style={{ fontSize: '12px', color: colors.textFaint, margin: 0, fontWeight: 500 }}>
                 Sensor IoT — Soil Moisture & Temperature
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {/* Legend pills */}
-              {[
-                { color: '#10b981', label: 'Moisture' },
-                { color: '#f59e0b', label: 'Temp' },
-              ].map(({ color, label }) => (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {[{ color: '#10b981', label: 'Moisture' }, { color: '#f59e0b', label: 'Temp' }].map(({ color, label }) => (
                 <div key={label} style={{
                   display: 'flex', alignItems: 'center', gap: '5px',
-                  background: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                  padding: '4px 10px', borderRadius: '20px',
+                  background: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+                  padding: '5px 11px', borderRadius: '20px',
                 }}>
-                  <div style={{
-                    width: '6px', height: '6px',
-                    borderRadius: '50%', background: color,
-                    boxShadow: `0 0 6px ${color}`,
-                  }} />
-                  <span style={{ fontSize: '11px', color: colors.textMuted, fontWeight: 600 }}>
-                    {label}
-                  </span>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+                  <span style={{ fontSize: '11px', color: colors.textMuted, fontWeight: 600 }}>{label}</span>
                 </div>
               ))}
-              {/* Real-time badge */}
               <span style={{
-                fontSize: '10px', fontWeight: 700,
+                fontSize: '10px', fontWeight: 800,
                 color: '#10b981', background: 'rgba(16,185,129,0.1)',
                 border: '1px solid rgba(16,185,129,0.2)',
-                padding: '4px 10px', borderRadius: '20px',
+                padding: '5px 11px', borderRadius: '20px',
                 letterSpacing: '0.5px', textTransform: 'uppercase',
               }}>
                 ● Live
@@ -607,7 +577,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Recharts */}
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer>
               <AreaChart data={telemetry} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -622,119 +591,107 @@ const Dashboard = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} vertical={false} />
-                <XAxis
-                  dataKey="time"
-                  stroke={colors.gridStroke}
-                  tick={{ fill: colors.textMuted, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  stroke={colors.gridStroke}
-                  tick={{ fill: colors.textMuted, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
+                <XAxis dataKey="time" stroke={colors.gridStroke} tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis stroke={colors.gridStroke} tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip theme={theme} />} />
-                <Area
-                  name="Soil Moisture (%)"
-                  type="monotone"
-                  dataKey="soil_moisture"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorMoisture)"
-                  dot={false}
-                  activeDot={{ r: 6, fill: '#10b981', stroke: theme === 'dark' ? '#080f1e' : '#fff', strokeWidth: 2 }}
+                <Area name="Soil Moisture (%)" type="monotone" dataKey="soil_moisture"
+                  stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMoisture)"
+                  dot={false} activeDot={{ r: 6, fill: '#10b981', stroke: theme === 'dark' ? '#080f1e' : '#fff', strokeWidth: 2 }}
                 />
-                <Area
-                  name="Temperature (°C)"
-                  type="monotone"
-                  dataKey="temperature"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorTemp)"
-                  dot={false}
-                  activeDot={{ r: 6, fill: '#f59e0b', stroke: theme === 'dark' ? '#080f1e' : '#fff', strokeWidth: 2 }}
+                <Area name="Temperature (°C)" type="monotone" dataKey="temperature"
+                  stroke="#f59e0b" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTemp)"
+                  dot={false} activeDot={{ r: 6, fill: '#f59e0b', stroke: theme === 'dark' ? '#080f1e' : '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Recent Users */}
+        {/* Recent Users Card */}
         <div style={{
           background: colors.cardBg,
           backdropFilter: theme === 'dark' ? 'blur(20px)' : 'none',
           border: `1px solid ${colors.cardBorder}`,
-          borderRadius: '20px',
-          padding: '24px',
-          boxShadow: theme === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.05)' : '0 1px 3px 0 rgba(0,0,0,0.05)',
+          borderRadius: '24px',
+          padding: '26px',
+          boxShadow: theme === 'dark'
+            ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.2)'
+            : '0 2px 12px rgba(0,0,0,0.05)',
           display: 'flex',
           flexDirection: 'column',
         }}>
-          <div style={{ marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: colors.textMain, margin: '0 0 4px' }}>
-              Recently Joined
-            </h2>
-            <p style={{ fontSize: '12px', color: colors.textFaint, margin: 0 }}>
-              {recent_users?.length || 0} pengguna baru
-            </p>
+          <div style={{ marginBottom: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: colors.textMain, margin: '0 0 4px' }}>
+                Recently Joined
+              </h2>
+              <p style={{ fontSize: '12px', color: colors.textFaint, margin: 0, fontWeight: 500 }}>
+                {recent_users?.length || 0} pengguna baru
+              </p>
+            </div>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '16px', boxShadow: '0 4px 12px rgba(99,102,241,0.35)',
+            }}>
+              👤
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, overflowY: 'auto' }}>
             {recent_users && recent_users.length > 0 ? (
               recent_users.map((ru, idx) => (
                 <div
                   key={ru.id}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '12px',
-                    borderRadius: '12px',
-                    transition: 'background 0.2s ease',
+                    padding: '12px 14px',
+                    borderRadius: '16px',
+                    border: `1px solid transparent`,
+                    transition: 'background 0.2s ease, border-color 0.2s ease',
                     cursor: 'default',
                     animation: `fadeSlideUp 0.4s ease ${idx * 0.06}s both`,
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = theme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+                    e.currentTarget.style.borderColor = colors.cardBorder;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'transparent';
+                  }}
                 >
-                  {/* Avatar */}
                   <div style={{
-                    width: '38px', height: '38px', borderRadius: '10px',
-                    background: `linear-gradient(135deg,
-                      hsl(${(idx * 60) % 360}, 70%, 50%),
-                      hsl(${(idx * 60 + 40) % 360}, 70%, 40%))`,
-                    display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: '14px',
-                    fontWeight: 700, color: '#fff', flexShrink: 0,
-                    boxShadow: `0 4px 10px hsla(${(idx * 60) % 360}, 70%, 50%, 0.3)`,
+                    width: '40px', height: '40px', borderRadius: '13px',
+                    background: `linear-gradient(135deg, hsl(${(idx * 60) % 360}, 70%, 50%), hsl(${(idx * 60 + 40) % 360}, 70%, 40%))`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '15px', fontWeight: 700, color: '#fff', flexShrink: 0,
+                    boxShadow: `0 4px 12px hsla(${(idx * 60) % 360}, 70%, 50%, 0.35)`,
                   }}>
                     {ru.name?.[0]?.toUpperCase() || '?'}
                   </div>
 
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
-                      fontWeight: 600, fontSize: '13px',
-                      color: colors.textMain, margin: '0 0 2px',
-                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      fontWeight: 700, fontSize: '13px', color: colors.textMain,
+                      margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
                       {ru.name}
                     </p>
                     <p style={{
-                      fontSize: '11px', color: colors.textFaint, margin: 0,
+                      fontSize: '11px', color: colors.textFaint, margin: 0, fontWeight: 500,
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
                       {ru.email}
                     </p>
                   </div>
 
-                  {/* Date */}
                   <span style={{
-                    fontSize: '10px', color: colors.textFaint,
-                    background: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    padding: '3px 8px', borderRadius: '8px',
+                    fontSize: '10px', color: colors.textFaint, fontWeight: 600,
+                    background: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                    border: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                    padding: '4px 9px', borderRadius: '10px',
                     whiteSpace: 'nowrap', flexShrink: 0,
                   }}>
                     {ru.joined}
@@ -747,7 +704,7 @@ const Dashboard = () => {
                 alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}>
                 <span style={{ fontSize: '32px' }}>👤</span>
-                <p style={{ color: colors.textFaint, fontSize: '13px' }}>
+                <p style={{ color: colors.textFaint, fontSize: '13px', fontWeight: 500 }}>
                   Belum ada pengguna baru
                 </p>
               </div>
@@ -758,13 +715,54 @@ const Dashboard = () => {
 
       {/* ── FOOTER ── */}
       <div style={{
-        textAlign: 'center',
-        padding: '12px',
-        borderTop: `1px solid ${colors.cardBorder}`,
+        background: colors.footerBg,
+        border: `1px solid ${colors.footerBorder}`,
+        borderRadius: '20px',
+        padding: '16px 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: theme === 'dark'
+          ? 'inset 0 1px 0 rgba(255,255,255,0.04)'
+          : '0 1px 4px rgba(0,0,0,0.04)',
       }}>
-        <span style={{ fontSize: '11px', color: colors.textFaint }}>
-          Smart Farm Management System © {new Date().getFullYear()} — All rights reserved
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Mini brand icon */}
+          <div style={{
+            width: '28px', height: '28px', borderRadius: '9px',
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '13px',
+          }}>
+            🌱
+          </div>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: colors.textMuted }}>
+            Smart Farm Management System
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span style={{
+            fontSize: '11px', color: colors.textFaint, fontWeight: 500,
+          }}>
+            © {new Date().getFullYear()} All rights reserved
+          </span>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '5px',
+            background: 'rgba(16,185,129,0.08)',
+            border: '1px solid rgba(16,185,129,0.15)',
+            padding: '4px 10px', borderRadius: '10px',
+          }}>
+            <div style={{
+              width: '5px', height: '5px', borderRadius: '50%',
+              background: '#10b981', boxShadow: '0 0 5px rgba(16,185,129,0.7)',
+              animation: 'pulse-dot 2s ease-in-out infinite',
+            }} />
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', letterSpacing: '0.5px' }}>
+              v1.0.0
+            </span>
+          </div>
+        </div>
       </div>
 
     </div>

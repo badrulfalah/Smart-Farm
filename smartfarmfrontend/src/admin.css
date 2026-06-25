@@ -464,11 +464,15 @@ button { font-family: var(--font-body); }
   margin-left: var(--sidebar-w);
   flex: 1;
   min-height: 100vh;
-  padding: 36px 36px 48px;
+  padding: 20px 20px 32px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 16px;
   animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  
+  /* ← Tambahkan ini */
+  border-radius: 24px 0 0 24px;
+  background: var(--bg-app);
 }
 
 @keyframes fadeUp {
