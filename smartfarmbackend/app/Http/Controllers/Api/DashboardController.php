@@ -3,37 +3,57 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Peternakan;
+use App\Models\Dashboard;
+use App\Models\Peringatan;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     /**
      * Get system statistics and Smart Farm telemetry data.
      */
-    public function getStats()
+    public function getStats(Request $request)
     {
-        $totalUsers = User::count();
-        $totalRoles = Role::count();
-        $totalPermissions = Permission::count();
+        $user = $request->user();
 
-        // Fetch recent users
-        $recentUsers = User::orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get(['id', 'name', 'email', 'created_at']);
+        // Fetch user's farms
+        if ($user->hasRole(['Super Admin', 'Admin'])) {
+            $farms = Peternakan::all();
+        } else {
+            $farms = Peternakan::where('id_pengguna', $user->id_pengguna)->get();
+        }
 
-        $formattedRecentUsers = $recentUsers->map(function($user) {
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'joined' => $user->created_at->diffForHumans()
-            ];
-        });
+        $farmIds = $farms->pluck('id_peternakan');
 
-        // Mock Smart Farm Telemetry Data (Soil moisture & Temp trend for Recharts)
+        // Recalculate dashboard for each farm to guarantee accurate statistics
+        foreach ($farmIds as $farmId) {
+            Dashboard::recalculate($farmId);
+        }
+
+        // Get dashboard statistics
+        $dashboards = Dashboard::whereIn('id_peternakan', $farmIds)->with('peternakan')->get();
+
+        $totalTernak = $dashboards->sum('total_ternak');
+        $ternakSehat = $dashboards->sum('ternak_sehat');
+        $ternakSakit = $dashboards->sum('ternak_sakit');
+        $jumlahPeringatan = $dashboards->sum('jumlah_peringatan');
+        $stokPakan = $dashboards->sum('stok_pakan');
+        
+        // Find latest update time
+        $latestUpdate = $dashboards->max('terakhir_update');
+
+        // Get recent warnings
+        $recentAlerts = Peringatan::whereIn('id_ternak', function ($query) use ($farmIds) {
+            $query->select('id_ternak')->from('ternak')->whereIn('id_peternakan', $farmIds);
+        })
+        ->with('ternak')
+        ->orderBy('tanggal', 'desc')
+        ->limit(5)
+        ->get();
+
+        // Telemetry data (Soil moisture & Temp trend for Recharts in the frontend dashboard)
         $telemetryData = [
             ['time' => '00:00', 'soil_moisture' => 62, 'temperature' => 24, 'humidity' => 85],
             ['time' => '04:00', 'soil_moisture' => 65, 'temperature' => 22, 'humidity' => 90],
@@ -47,12 +67,36 @@ class DashboardController extends Controller
             'status' => 'success',
             'data' => [
                 'stats' => [
-                    'total_users' => $totalUsers,
-                    'total_roles' => $totalRoles,
-                    'total_permissions' => $totalPermissions,
-                    'farm_status' => 'Optimal',
+                    'total_ternak' => $totalTernak,
+                    'ternak_sehat' => $ternakSehat,
+                    'ternak_sakit' => $ternakSakit,
+                    'jumlah_peringatan' => $jumlahPeringatan,
+                    'stok_pakan' => (float) $stokPakan,
+                    'terakhir_update' => $latestUpdate ? $latestUpdate : null,
                 ],
-                'recent_users' => $formattedRecentUsers,
+                'farms' => $dashboards->map(function ($db) {
+                    return [
+                        'id_peternakan' => $db->id_peternakan,
+                        'nama_peternakan' => $db->peternakan->nama_peternakan,
+                        'total_ternak' => $db->total_ternak,
+                        'ternak_sehat' => $db->ternak_sehat,
+                        'ternak_sakit' => $db->ternak_sakit,
+                        'jumlah_peringatan' => $db->jumlah_peringatan,
+                        'stok_pakan' => (float) $db->stok_pakan,
+                    ];
+                }),
+                'recent_alerts' => $recentAlerts->map(function ($alert) {
+                    return [
+                        'id_peringatan' => $alert->id_peringatan,
+                        'kode_ternak' => $alert->ternak->kode_ternak,
+                        'nama_ternak' => $alert->ternak->nama_ternak,
+                        'jenis_peringatan' => $alert->jenis_peringatan,
+                        'tingkat_peringatan' => $alert->tingkat_peringatan,
+                        'pesan' => $alert->pesan,
+                        'status' => $alert->status,
+                        'tanggal' => $alert->tanggal ? $alert->tanggal : null,
+                    ];
+                }),
                 'telemetry' => $telemetryData,
             ]
         ]);
