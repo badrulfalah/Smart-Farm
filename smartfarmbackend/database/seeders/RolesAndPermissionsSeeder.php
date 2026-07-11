@@ -48,26 +48,38 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Create Super Admin user
         $adminUser = User::create([
-            'name' => 'Super Admin',
+            'nama_lengkap' => 'Super Admin',
             'email' => 'admin@smartfarm.com',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
+            'no_hp' => '081234567890',
+            'alamat' => 'Jakarta, Indonesia',
+            'peran' => 'Super Admin',
+            'status' => 'Aktif',
         ]);
 
         $adminUser->assignRole($superAdminRole);
 
         // Create ordinary Admin user
         $normalAdmin = User::create([
-            'name' => 'SmartFarm Admin',
+            'nama_lengkap' => 'SmartFarm Admin',
             'email' => 'admin2@smartfarm.com',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
+            'no_hp' => '081234567891',
+            'alamat' => 'Bandung, Indonesia',
+            'peran' => 'Admin',
+            'status' => 'Aktif',
         ]);
         $normalAdmin->assignRole($adminRole);
 
         // Create ordinary User
         $normalUser = User::create([
-            'name' => 'Farmer John',
+            'nama_lengkap' => 'Farmer John',
             'email' => 'farmer@smartfarm.com',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
+            'no_hp' => '081234567892',
+            'alamat' => 'Sleman, Yogyakarta',
+            'peran' => 'User',
+            'status' => 'Aktif',
         ]);
         $normalUser->assignRole($userRole);
     }

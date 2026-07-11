@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, Eye
 } from 'lucide-react';
 import api from '../services/api';
-import heroImage from '../assets/hero.png';
+import heroImage from '../assets/hero.JPG';
 import '../user.css';
 
 /* ── Fallback data ── */
@@ -815,20 +815,25 @@ const Home = () => {
           padding: '40px 44px',
           boxShadow: '0 4px 24px rgba(15,23,42,0.05)',
         }}>
-          <div style={{ flexShrink: 0 }}>
-            <div style={{
-              width: '180px', height: '180px', borderRadius: '18px',
-              background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '1px solid rgba(16,185,129,0.15)',
-            }}>
-              <img
-                src={heroImage}
-                alt="Smart Farm illustration"
-                style={{ width: '145px', height: 'auto' }}
-              />
-            </div>
+        <div style={{ flexShrink: 0 }}>
+          <div style={{
+            width: '200px', height: '200px', borderRadius: '18px',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+            border: '1px solid rgba(16,185,129,0.15)',
+          }}>
+            <img
+              src={heroImage}
+              alt="Smart Farm illustration"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
           </div>
+        </div>
 
           <div style={{ flex: 1 }}>
             <div style={{

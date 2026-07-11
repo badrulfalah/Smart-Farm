@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle, Leaf } from 'lucide-react';
 
@@ -266,12 +266,20 @@ const loginStyles = `
   @keyframes loginSpinAnim { to { transform: rotate(360deg); } }
 
   .login-footer-note {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
     line-height: 1.7;
     text-align: center;
-    opacity: 0.7;
   }
+
+  .login-footer-note a {
+    color: var(--primary-emerald);
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .login-footer-note a:hover { opacity: 0.8; }
 
   @media (max-width: 900px) {
     .login-page { grid-template-columns: 1fr; }
@@ -442,8 +450,7 @@ const Login = () => {
             </form>
 
             <p className="login-footer-note">
-              Sistem ini hanya untuk pengguna yang berwenang.
-              <br />Akses tidak sah akan dicatat dan dilaporkan.
+              Belum punya akun? <Link to="/register">Daftar di sini</Link>
             </p>
           </div>
         </div>

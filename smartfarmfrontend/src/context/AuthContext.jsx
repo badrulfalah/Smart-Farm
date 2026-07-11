@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initAuth();
-  }, [token]);
+  }, []);
 
   const handleLogoutState = () => {
     localStorage.removeItem('token');
@@ -63,6 +63,83 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (data) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/register', data);
+      if (response.data && response.data.status === 'success') {
+        const { token: userToken, user: userData } = response.data.data;
+
+        localStorage.setItem('token', userToken);
+        setToken(userToken);
+        setUser(userData);
+        setLoading(false);
+        return { success: true };
+      }
+      throw new Error(response.data.message || 'Registrasi gagal.');
+    } catch (err) {
+      console.error('Register error:', err);
+      const errors = err.response?.data?.errors;
+      const errMsg = errors
+        ? Object.values(errors).flat().join(' ')
+        : err.response?.data?.message || 'Terjadi kesalahan saat registrasi.';
+      setError(errMsg);
+      setLoading(false);
+      return { success: false, error: errMsg };
+    }
+  };
+
+  const updateProfile = async (data) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.put('/profile', data);
+      if (response.data && response.data.status === 'success') {
+        setUser(response.data.data);
+        setLoading(false);
+        return { success: true };
+      }
+      throw new Error(response.data.message || 'Gagal memperbarui profil.');
+    } catch (err) {
+      console.error('Update profile error:', err);
+      const errors = err.response?.data?.errors;
+      const errMsg = errors
+        ? Object.values(errors).flat().join(' ')
+        : err.response?.data?.message || 'Terjadi kesalahan saat memperbarui profil.';
+      setError(errMsg);
+      setLoading(false);
+      return { success: false, error: errMsg };
+    }
+  };
+
+  const updatePhoto = async (formData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post('/profile/photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      if (response.data && response.data.status === 'success') {
+        setUser(response.data.data);
+        setLoading(false);
+        return { success: true };
+      }
+      throw new Error(response.data.message || 'Gagal memperbarui foto.');
+    } catch (err) {
+      console.error('Update photo error:', err);
+      const errors = err.response?.data?.errors;
+      const errMsg = errors
+        ? Object.values(errors).flat().join(' ')
+        : err.response?.data?.message || 'Terjadi kesalahan saat memperbarui foto profil.';
+      setError(errMsg);
+      setLoading(false);
+      return { success: false, error: errMsg };
+    }
+  };
+
   const logout = async () => {
     setLoading(true);
     try {
@@ -76,7 +153,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, error, login, logout, setError }}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, register, updateProfile, updatePhoto, logout, setError }}>
       {children}
     </AuthContext.Provider>
   );

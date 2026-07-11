@@ -262,8 +262,18 @@ button { font-family: var(--font-body); }
   display: flex;
   flex-direction: column;
   gap: 3px;
-  flex-grow: 1;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--slate-200) transparent;
+  padding-right: 4px;
 }
+
+.sidebar-menu::-webkit-scrollbar { width: 4px; }
+.sidebar-menu::-webkit-scrollbar-track { background: transparent; }
+.sidebar-menu::-webkit-scrollbar-thumb { background: var(--slate-200); border-radius: 4px; }
+.sidebar-menu::-webkit-scrollbar-thumb:hover { background: var(--slate-300); }
 
 /* Nav links */
 .sidebar-link {
