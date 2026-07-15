@@ -145,4 +145,21 @@ class PeringatanController extends Controller
             'message' => 'Peringatan berhasil dihapus'
         ]);
     }
+
+    public function countBaru(Request $request)
+{
+    $user = $request->user();
+
+    $peternakanIds = Peternakan::where('id_pengguna', $user->id_pengguna)
+        ->pluck('id_peternakan');
+
+    $ternakIds = Ternak::whereIn('id_peternakan', $peternakanIds)
+        ->pluck('id_ternak');
+
+    $count = Peringatan::whereIn('id_ternak', $ternakIds)
+        ->where('status', 'baru')
+        ->count();
+
+    return response()->json(['count' => $count]);
+}
 }

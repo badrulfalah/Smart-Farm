@@ -65,7 +65,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('jenis-pakan', JenisPakanController::class);
     Route::apiResource('stok-pakan', StokPakanController::class);
     Route::apiResource('pemberian-pakan', PemberianPakanController::class);
+
+    // Peringatan: route spesifik HARUS di atas apiResource,
+    // supaya "count-baru" tidak tertangkap sebagai {peringatan} pada route show.
+    Route::get('/peringatan/count-baru', [PeringatanController::class, 'countBaru']);
     Route::apiResource('peringatan', PeringatanController::class);
+
     Route::apiResource('tindakan-cepat', TindakanCepatController::class);
 
     // Read activity logs

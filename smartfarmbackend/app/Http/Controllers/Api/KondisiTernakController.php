@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\KondisiTernak;
 use App\Models\Ternak;
 use App\Models\Dashboard;
+use App\Models\Peringatan;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,24 +60,45 @@ class KondisiTernakController extends Controller
 
         $kondisi = KondisiTernak::create($request->all());
 
-        // Sync weight and potentially status back to Ternak
         $ternak->berat = $request->berat;
-        // Optionally map condition to health status if it indicates sickness
-        if ($request->suhu_tubuh > 39.5 || $request->nafsu_makan === 'Sangat Kurang' || str_contains(strtolower($request->kondisi_fisik), 'sakit')) {
+        $isAbnormal = false;
+        $abnormalReasons = [];
+        
+        if ($request->suhu_tubuh > 39.5) {
+            $isAbnormal = true;
+            $abnormalReasons[] = "Suhu tubuh tinggi ({$request->suhu_tubuh}°C)";
+        }
+        if ($request->nafsu_makan === 'Sangat Kurang') {
+            $isAbnormal = true;
+            $abnormalReasons[] = "Nafsu makan sangat kurang";
+        }
+        if (str_contains(strtolower($request->kondisi_fisik), 'sakit')) {
+            $isAbnormal = true;
+            $abnormalReasons[] = "Kondisi fisik menunjukkan sakit";
+        }
+        
+        if ($isAbnormal) {
             $ternak->status_kesehatan = 'Sakit';
+            
+            Peringatan::create([
+                'id_ternak' => $ternak->id_ternak,
+                'jenis_peringatan' => 'Kesehatan Abnormal',
+                'tingkat_peringatan' => $request->suhu_tubuh > 40 ? 'Berat' : 'Sedang',
+                'pesan' => 'Terdeteksi kondisi abnormal: ' . implode(', ', $abnormalReasons) . '. Segera lakukan pemeriksaan dan tindakan.',
+                'status' => 'belum_ditangani',
+            ]);
         } else {
             $ternak->status_kesehatan = 'Sehat';
         }
         $ternak->save();
 
-        // Update dashboard
         Dashboard::recalculate($ternak->id_peternakan);
 
         $this->logActivity('Mencatat kondisi kesehatan baru untuk ternak: ' . $ternak->kode_ternak, 'Kondisi Ternak');
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Kondisi kesehatan ternak berhasil dicatat',
+            'message' => 'Kondisi kesehatan ternak berhasil dicatat' . ($isAbnormal ? ' dan peringatan otomatis dibuat.' : '.'),
             'data' => $kondisi
         ], 201);
     }
@@ -119,23 +141,45 @@ class KondisiTernakController extends Controller
 
         $kondisiTernak->update($request->all());
 
-        // Update Ternak properties
         $ternak->berat = $request->berat;
-        if ($request->suhu_tubuh > 39.5 || $request->nafsu_makan === 'Sangat Kurang' || str_contains(strtolower($request->kondisi_fisik), 'sakit')) {
+        $isAbnormal = false;
+        $abnormalReasons = [];
+        
+        if ($request->suhu_tubuh > 39.5) {
+            $isAbnormal = true;
+            $abnormalReasons[] = "Suhu tubuh tinggi ({$request->suhu_tubuh}°C)";
+        }
+        if ($request->nafsu_makan === 'Sangat Kurang') {
+            $isAbnormal = true;
+            $abnormalReasons[] = "Nafsu makan sangat kurang";
+        }
+        if (str_contains(strtolower($request->kondisi_fisik), 'sakit')) {
+            $isAbnormal = true;
+            $abnormalReasons[] = "Kondisi fisik menunjukkan sakit";
+        }
+        
+        if ($isAbnormal) {
             $ternak->status_kesehatan = 'Sakit';
+            
+            Peringatan::create([
+                'id_ternak' => $ternak->id_ternak,
+                'jenis_peringatan' => 'Kesehatan Abnormal',
+                'tingkat_peringatan' => $request->suhu_tubuh > 40 ? 'Berat' : 'Sedang',
+                'pesan' => 'Terdeteksi kondisi abnormal: ' . implode(', ', $abnormalReasons) . '. Segera lakukan pemeriksaan dan tindakan.',
+                'status' => 'belum_ditangani',
+            ]);
         } else {
             $ternak->status_kesehatan = 'Sehat';
         }
         $ternak->save();
 
-        // Update dashboard
         Dashboard::recalculate($ternak->id_peternakan);
 
         $this->logActivity('Memperbarui kondisi kesehatan ternak: ' . $ternak->kode_ternak, 'Kondisi Ternak');
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Kondisi kesehatan ternak berhasil diperbarui',
+            'message' => 'Kondisi kesehatan ternak berhasil diperbarui' . ($isAbnormal ? ' dan peringatan otomatis dibuat.' : '.'),
             'data' => $kondisiTernak
         ]);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Ternak;
 use App\Models\Peternakan;
+use App\Models\Peringatan;
 use App\Models\Dashboard;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
@@ -70,6 +71,9 @@ class TernakController extends Controller
         // Update dashboard
         Dashboard::recalculate($ternak->id_peternakan);
 
+        // Buat peringatan otomatis jika ternak baru langsung berstatus sakit
+        $this->autoCreateHealthAlert($ternak);
+
         $this->logActivity('Menambahkan ternak baru: ' . $ternak->kode_ternak . ' (' . $ternak->nama_ternak . ')', 'Ternak');
 
         return response()->json([
@@ -133,6 +137,9 @@ class TernakController extends Controller
             Dashboard::recalculate($request->id_peternakan);
         }
 
+        // Buat peringatan otomatis jika status kesehatan berubah menjadi sakit
+        $this->autoCreateHealthAlert($ternak->fresh());
+
         $this->logActivity('Memperbarui data ternak: ' . $ternak->kode_ternak, 'Ternak');
 
         return response()->json([
@@ -164,6 +171,34 @@ class TernakController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Ternak berhasil dihapus'
+        ]);
+    }
+
+    /**
+     * Buat peringatan otomatis jika status kesehatan ternak "Sakit"
+     * dan belum ada peringatan yang belum ditangani untuk ternak ini.
+     * Mencegah duplikasi peringatan setiap kali data ternak diupdate.
+     */
+    private function autoCreateHealthAlert(Ternak $ternak)
+    {
+        if (strtolower($ternak->status_kesehatan) !== 'sakit') {
+            return;
+        }
+
+        $sudahAda = Peringatan::where('id_ternak', $ternak->id_ternak)
+            ->where('status', 'belum_ditangani')
+            ->exists();
+
+        if ($sudahAda) {
+            return;
+        }
+
+        Peringatan::create([
+            'id_ternak' => $ternak->id_ternak,
+            'jenis_peringatan' => 'Status Kesehatan',
+            'tingkat_peringatan' => 'Sedang',
+            'pesan' => 'Ternak ' . $ternak->kode_ternak . ' (' . $ternak->nama_ternak . ') terdeteksi dalam kondisi sakit.',
+            'status' => 'belum_ditangani',
         ]);
     }
 }

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import {
   LayoutDashboard,
   Users,
@@ -21,17 +22,39 @@ import {
   Soup,
 } from 'lucide-react';
 
+// Polling interval untuk cek peringatan baru (ms)
+const ALERT_POLL_INTERVAL = 30000;
+
 const AdminLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
+  const pollRef = useRef(null);
 
   // Efek untuk menerapkan tema ke HTML
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Ambil jumlah peringatan baru (mis. hewan sakit) + polling berkala
+  useEffect(() => {
+    const fetchAlertCount = async () => {
+      try {
+        const response = await api.get('/peringatan/count-baru');
+        setAlertCount(response.data?.count || 0);
+      } catch (err) {
+        console.error('Gagal memuat jumlah peringatan:', err);
+      }
+    };
+
+    fetchAlertCount();
+    pollRef.current = setInterval(fetchAlertCount, ALERT_POLL_INTERVAL);
+
+    return () => clearInterval(pollRef.current);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -51,7 +74,7 @@ const AdminLayout = () => {
   const allMenuItems = [
     // MAIN MENU
     { path: '/admin/dashboard', name: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={2} />, roles: ['Super Admin', 'Admin'], section: 'main' },
-    { path: '/admin/peringatan', name: 'Peringatan', icon: <Bell size={18} strokeWidth={2} />, roles: ['Super Admin', 'Admin'], section: 'main' },
+    { path: '/admin/peringatan', name: 'Peringatan', icon: <Bell size={18} strokeWidth={2} />, roles: ['Super Admin', 'Admin'], section: 'main', badgeKey: 'peringatan' },
     // MASTER DATA
     { path: '/admin/peternakan', name: 'Kandang', icon: <Warehouse size={18} strokeWidth={2} />, roles: ['Super Admin', 'Admin'], section: 'master' },
     { path: '/admin/jenis-ternak', name: 'Jenis Ternak', icon: <PawPrint size={18} strokeWidth={2} />, roles: ['Super Admin', 'Admin'], section: 'master' },
@@ -77,22 +100,53 @@ const AdminLayout = () => {
     admin: 'Administrasi',
   };
 
+  // Badge notifikasi kecil (angka), dipakai di menu Peringatan.
+  // Hanya styling badge itu sendiri — tidak mengubah layout link di sekelilingnya.
+  const NotifBadge = ({ count }) => {
+    if (!count || count <= 0) return null;
+    return (
+      <span
+        className="nav-badge"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: '18px',
+          height: '18px',
+          padding: '0 5px',
+          borderRadius: '999px',
+          background: '#dc2626',
+          color: '#fff',
+          fontSize: '10px',
+          fontWeight: 700,
+          lineHeight: 1,
+        }}
+      >
+        {count > 99 ? '99+' : count}
+      </span>
+    );
+  };
+
   const renderSection = (sectionKey, items) => {
     if (items.length === 0) return null;
     return (
       <>
         <p className="nav-section-label">{sectionLabels[sectionKey]}</p>
-        {items.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <span className="link-icon">{item.icon}</span>
-            <span className="link-label">{item.name}</span>
-          </NavLink>
-        ))}
+        {items.map((item) => {
+          const badgeCount = item.badgeKey === 'peringatan' ? alertCount : 0;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="link-icon">{item.icon}</span>
+              <span className="link-label">{item.name}</span>
+              {badgeCount > 0 && <NotifBadge count={badgeCount} />}
+            </NavLink>
+          );
+        })}
       </>
     );
   };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Plus, Pencil, Trash2, Search, AlertTriangle, AlertCircle,
-  CheckCircle, XCircle, X, Loader2, Bell
+  Pencil, Trash2, Search, AlertTriangle,
+  CheckCircle, XCircle, X, Loader2, Bell, PlusCircle
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -46,6 +46,42 @@ const getStatusBadge = (status) => {
   );
 };
 
+// Badge kecil untuk menandai peringatan yang belum tercatat resmi di tabel `peringatan`
+const AutoBadge = () => (
+  <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', background: 'var(--indigo-100, #e0e7ff)', color: 'var(--indigo-500, #6366f1)', border: '1px solid rgba(99,102,241,0.3)', marginLeft: '6px' }}>
+    Otomatis
+  </span>
+);
+
+/**
+ * Menggabungkan data peringatan resmi (dari tabel `peringatan`) dengan
+ * ternak yang berstatus "sakit" tapi belum punya record peringatan aktif.
+ * Ini memastikan semua ternak sakit tetap muncul di daftar, walaupun
+ * belum ada yang input peringatan secara manual / belum ada trigger backend.
+ */
+const gabungkanDenganTernakSakit = (peringatanData, ternakData) => {
+  const idTernakDenganPeringatanAktif = new Set(
+    peringatanData
+      .filter(p => p.status !== 'sudah_ditangani')
+      .map(p => p.id_ternak)
+  );
+
+  const peringatanOtomatis = ternakData
+    .filter(t => t.status_kesehatan === 'sakit' && !idTernakDenganPeringatanAktif.has(t.id_ternak))
+    .map(t => ({
+      id_peringatan: `auto-${t.id_ternak}`,
+      id_ternak: t.id_ternak,
+      ternak: t,
+      jenis_peringatan: 'Status Kesehatan',
+      tingkat_peringatan: 'Berat',
+      pesan: `Ternak ${t.nama_ternak} (${t.kode_ternak}) berstatus sakit, belum ada peringatan resmi.`,
+      status: 'belum_ditangani',
+      isAuto: true,
+    }));
+
+  return [...peringatanOtomatis, ...peringatanData];
+};
+
 const PeringatanList = () => {
   const [data, setData] = useState([]);
   const [ternakList, setTernakList] = useState([]);
@@ -53,7 +89,6 @@ const PeringatanList = () => {
   const [error, setError] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('create');
   const [selectedItem, setSelectedItem] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [search, setSearch] = useState('');
@@ -72,8 +107,10 @@ const PeringatanList = () => {
   const fetchData = async () => {
     try {
       const [pRes, tRes] = await Promise.all([api.get('/peringatan'), api.get('/ternak')]);
-      if (pRes.data.status === 'success') setData(pRes.data.data);
-      if (tRes.data.status === 'success') setTernakList(tRes.data.data);
+      const peringatanData = pRes.data.status === 'success' ? pRes.data.data : [];
+      const ternakData = tRes.data.status === 'success' ? tRes.data.data : [];
+      setTernakList(ternakData);
+      setData(gabungkanDenganTernakSakit(peringatanData, ternakData));
     } catch (err) {
       setError('Gagal memuat data peringatan.');
     } finally {
@@ -83,14 +120,8 @@ const PeringatanList = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const openCreate = () => {
-    setModalType('create'); setSelectedItem(null);
-    setForm({ id_ternak: '', jenis_peringatan: '', tingkat_peringatan: '', pesan: '', status: 'belum_ditangani' });
-    setFormErrors({}); setShowModal(true);
-  };
-
   const openEdit = (item) => {
-    setModalType('edit'); setSelectedItem(item);
+    setSelectedItem(item);
     setForm({ id_ternak: item.id_ternak || '', jenis_peringatan: item.jenis_peringatan || '', tingkat_peringatan: item.tingkat_peringatan || '', pesan: item.pesan || '', status: item.status || 'belum_ditangani' });
     setFormErrors({}); setShowModal(true);
   };
@@ -114,12 +145,16 @@ const PeringatanList = () => {
     if (!validateForm()) return;
     setIsSubmitting(true);
     try {
-      if (modalType === 'create') {
-        const res = await api.post('/peringatan', form);
-        if (res.data.status === 'success') { addToast('Peringatan berhasil dibuat!'); setShowModal(false); fetchData(); }
-      } else {
-        const res = await api.put(`/peringatan/${selectedItem.id_peringatan}`, form);
-        if (res.data.status === 'success') { addToast('Peringatan berhasil diperbarui!'); setShowModal(false); fetchData(); }
+      // Kalau item ini "Otomatis" (belum ada di tabel peringatan), buat record baru (POST).
+      // Kalau sudah ada record resminya, update seperti biasa (PUT).
+      const res = selectedItem?.isAuto
+        ? await api.post('/peringatan', form)
+        : await api.put(`/peringatan/${selectedItem.id_peringatan}`, form);
+
+      if (res.data.status === 'success') {
+        addToast(selectedItem?.isAuto ? 'Peringatan resmi berhasil dibuat!' : 'Peringatan berhasil diperbarui!');
+        setShowModal(false);
+        fetchData();
       }
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Terjadi kesalahan sistem.';
@@ -155,9 +190,8 @@ const PeringatanList = () => {
       <div className="table-actions-row">
         <div>
           <h2 style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text-heading)' }}>Monitoring Peringatan</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px', fontWeight: 500 }}>Kelola peringatan dan notifikasi kesehatan ternak.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px', fontWeight: 500 }}>Kelola peringatan dan notifikasi kesehatan ternak. Ternak berstatus sakit otomatis tampil di sini.</p>
         </div>
-        <button onClick={openCreate} className="btn-action-primary"><Plus size={15} strokeWidth={2.5} /> Tambah Peringatan</button>
       </div>
 
       {error && <div className="alert-banner"><AlertTriangle size={15} strokeWidth={2} style={{ flexShrink: 0 }} /><span>{error}</span></div>}
@@ -203,14 +237,25 @@ const PeringatanList = () => {
                   <div style={{ fontWeight: 700, color: 'var(--text-heading)', fontSize: '13px' }}>{p.ternak?.nama_ternak || '-'}</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{p.ternak?.kode_ternak || '-'}</div>
                 </td>
-                <td style={{ color: 'var(--text-heading)', fontWeight: 600 }}>{p.jenis_peringatan}</td>
+                <td style={{ color: 'var(--text-heading)', fontWeight: 600 }}>
+                  {p.jenis_peringatan}
+                  {p.isAuto && <AutoBadge />}
+                </td>
                 <td>{getTingkatBadge(p.tingkat_peringatan)}</td>
                 <td style={{ color: 'var(--text-muted)', fontSize: '12px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.pesan}</td>
                 <td>{getStatusBadge(p.status)}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                    <button onClick={() => openEdit(p)} className="btn-icon" title="Edit"><Pencil size={14} strokeWidth={2} /></button>
-                    <button onClick={() => setDeleteId(p.id_peringatan)} className="btn-icon delete" title="Hapus"><Trash2 size={14} strokeWidth={2} /></button>
+                    {p.isAuto ? (
+                      <button onClick={() => openEdit(p)} className="btn-icon" title="Buat peringatan resmi">
+                        <PlusCircle size={14} strokeWidth={2} />
+                      </button>
+                    ) : (
+                      <>
+                        <button onClick={() => openEdit(p)} className="btn-icon" title="Edit"><Pencil size={14} strokeWidth={2} /></button>
+                        <button onClick={() => setDeleteId(p.id_peringatan)} className="btn-icon delete" title="Hapus"><Trash2 size={14} strokeWidth={2} /></button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -231,12 +276,12 @@ const PeringatanList = () => {
           <div className="modal-content">
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: 38, height: 38, borderRadius: '12px', flexShrink: 0, background: modalType === 'create' ? 'linear-gradient(135deg, var(--amber-500), var(--amber-700))' : 'linear-gradient(135deg, var(--indigo-500), #818cf8)', boxShadow: modalType === 'create' ? '0 8px 24px rgba(245,158,11,0.2)' : 'var(--shadow-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {modalType === 'create' ? <Bell size={18} strokeWidth={2.5} color="#fff" /> : <Pencil size={16} strokeWidth={2} color="#fff" />}
+                <div style={{ width: 38, height: 38, borderRadius: '12px', flexShrink: 0, background: 'linear-gradient(135deg, var(--indigo-500), #818cf8)', boxShadow: 'var(--shadow-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Pencil size={16} strokeWidth={2} color="#fff" />
                 </div>
                 <div>
-                  <h2>{modalType === 'create' ? 'Tambah Peringatan Baru' : 'Edit Peringatan'}</h2>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>{modalType === 'create' ? 'Isi detail peringatan.' : `Mengubah peringatan untuk: ${selectedItem?.ternak?.nama_ternak || ''}`}</p>
+                  <h2>{selectedItem?.isAuto ? 'Buat Peringatan Resmi' : 'Edit Peringatan'}</h2>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>{`Untuk ternak: ${selectedItem?.ternak?.nama_ternak || ''}`}</p>
                 </div>
               </div>
               <button onClick={() => setShowModal(false)} className="btn-icon" title="Tutup"><X size={16} strokeWidth={2} /></button>
@@ -283,7 +328,10 @@ const PeringatanList = () => {
               <div className="modal-footer">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary" disabled={isSubmitting}>Batal</button>
                 <button type="submit" className="btn-action-primary" disabled={isSubmitting}>
-                  {isSubmitting ? <><Loader2 size={14} style={{ animation: 'spin 0.9s linear infinite' }} /> Menyimpan...</> : modalType === 'create' ? <><Bell size={14} strokeWidth={2.5} /> Simpan</> : <><CheckCircle size={14} strokeWidth={2} /> Perbarui</>}
+                  {isSubmitting
+                    ? <><Loader2 size={14} style={{ animation: 'spin 0.9s linear infinite' }} /> Menyimpan...</>
+                    : <><CheckCircle size={14} strokeWidth={2} /> {selectedItem?.isAuto ? 'Simpan sebagai Peringatan' : 'Perbarui'}</>
+                  }
                 </button>
               </div>
             </form>

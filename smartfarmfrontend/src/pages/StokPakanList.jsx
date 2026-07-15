@@ -23,6 +23,8 @@ const Toast = ({ toast }) => (
   </div>
 );
 
+const ErrorText = ({ msg }) => msg ? <span style={{ fontSize: '12px', color: 'var(--red-500)', fontWeight: 600, marginTop: '4px', display: 'block' }}>{msg}</span> : null;
+
 const StatusBadge = ({ jumlah, stokMinimum }) => {
   const jumlahValue = Number(jumlah ?? 0);
   const minimumValue = Number(stokMinimum ?? 0);
@@ -57,6 +59,8 @@ const SkeletonRow = () => (
   </tr>
 );
 
+const initialForm = { id_peternakan: '', id_pakan: '', jumlah: '', stok_minimum: '' };
+
 const StokPakanList = () => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
@@ -74,6 +78,9 @@ const StokPakanList = () => {
   const [jenisList, setJenisList] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingStok, setEditingStok] = useState(null);
+  const [form, setForm] = useState(initialForm);
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const perPage = 10;
 
   const addToast = (message, type = 'success') => {
@@ -147,6 +154,74 @@ const StokPakanList = () => {
 
   useEffect(() => { setCurrentPage(1); }, [search, filterFarm, filterJenis]);
 
+  const openCreate = () => {
+    setEditingStok(null);
+    setForm(initialForm);
+    setFormErrors({});
+    setShowForm(true);
+  };
+
+  const openEdit = (stok) => {
+    setEditingStok(stok);
+    setForm({
+      id_peternakan: stok.id_peternakan || '',
+      id_pakan: stok.id_pakan || '',
+      jumlah: stok.jumlah ?? '',
+      stok_minimum: stok.stok_minimum ?? '',
+    });
+    setFormErrors({});
+    setShowForm(true);
+  };
+
+  const handleFormChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!form.id_peternakan) errors.id_peternakan = 'Peternakan wajib dipilih.';
+    if (!form.id_pakan) errors.id_pakan = 'Jenis pakan wajib dipilih.';
+    if (form.jumlah === '' || Number(form.jumlah) < 0) errors.jumlah = 'Jumlah wajib diisi dan tidak boleh negatif.';
+    if (form.stok_minimum === '' || Number(form.stok_minimum) < 0) errors.stok_minimum = 'Stok minimum wajib diisi dan tidak boleh negatif.';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSubmitting(true);
+    const payload = {
+      id_peternakan: form.id_peternakan,
+      id_pakan: form.id_pakan,
+      jumlah: Number(form.jumlah),
+      stok_minimum: Number(form.stok_minimum),
+    };
+    try {
+      if (editingStok) {
+        const res = await api.put(`/stok-pakan/${editingStok.id_stok}`, payload);
+        if (res.data.status === 'success') {
+          addToast('Stok pakan berhasil diperbarui!');
+          setShowForm(false);
+          fetchData();
+        }
+      } else {
+        const res = await api.post('/stok-pakan', payload);
+        if (res.data.status === 'success') {
+          addToast('Stok pakan berhasil ditambahkan!');
+          setShowForm(false);
+          fetchData();
+        }
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Terjadi kesalahan sistem.';
+      addToast(errMsg, 'error');
+      if (err.response?.data?.errors) setFormErrors(err.response.data.errors);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
@@ -175,9 +250,14 @@ const StokPakanList = () => {
             Monitoring ketersediaan pakan di setiap peternakan.
           </p>
         </div>
-        <button onClick={() => navigate('/admin/pakan/jenis')} className="btn-action-primary">
-          <Package size={15} strokeWidth={2.5} /> Kelola Jenis Pakan
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button onClick={openCreate} className="btn-action-primary">
+            <Plus size={15} strokeWidth={2.5} /> Tambah Stok
+          </button>
+          <button onClick={() => navigate('/admin/pakan/jenis')} className="btn-secondary">
+            <Package size={15} strokeWidth={2.5} /> Kelola Jenis Pakan
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -230,7 +310,7 @@ const StokPakanList = () => {
               </th>
               <th>Status</th>
               <th>Terakhir Update</th>
-              <th style={{ width: '110px', textAlign: 'center' }}>Aksi</th>
+              <th style={{ width: '140px', textAlign: 'center' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -248,6 +328,9 @@ const StokPakanList = () => {
                   <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{s.terakhir_update || '-'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <button onClick={() => openEdit(s)} className="btn-icon" title="Edit">
+                        <Pencil size={14} strokeWidth={2} />
+                      </button>
                       <button onClick={() => navigate('/admin/pakan/pemberian')} className="btn-icon" title="Catat Pemberian">
                         <Plus size={14} strokeWidth={2} />
                       </button>
@@ -301,6 +384,74 @@ const StokPakanList = () => {
             <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="btn-icon" title="Last">
               <ChevronLast size={14} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Form Modal: Tambah / Edit Stok */}
+      {showForm && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowForm(false); }}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: '12px', flexShrink: 0,
+                  background: editingStok ? 'linear-gradient(135deg, var(--indigo-500), #818cf8)' : 'linear-gradient(135deg, var(--primary), var(--primary))',
+                  boxShadow: 'var(--shadow-indigo)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {editingStok ? <Pencil size={16} strokeWidth={2} color="#fff" /> : <Plus size={18} strokeWidth={2.5} color="#fff" />}
+                </div>
+                <div>
+                  <h2>{editingStok ? 'Edit Stok Pakan' : 'Tambah Stok Pakan'}</h2>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, marginTop: '2px' }}>
+                    {editingStok ? 'Perbarui data stok pakan.' : 'Isi detail stok pakan baru.'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowForm(false)} className="btn-icon" title="Tutup">
+                <X size={16} strokeWidth={2} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} style={{ display: 'contents' }}>
+              <div className="modal-body">
+                <div className="input-group">
+                  <label htmlFor="f-peternakan">Peternakan</label>
+                  <select id="f-peternakan" name="id_peternakan" value={form.id_peternakan} onChange={handleFormChange} disabled={isSubmitting} className={formErrors.id_peternakan ? 'input-error' : ''}>
+                    <option value="">-- Pilih Peternakan --</option>
+                    {farms.map(f => <option key={f.id_peternakan} value={f.id_peternakan}>{f.nama_peternakan}</option>)}
+                  </select>
+                  <ErrorText msg={formErrors.id_peternakan} />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="f-pakan">Jenis Pakan</label>
+                  <select id="f-pakan" name="id_pakan" value={form.id_pakan} onChange={handleFormChange} disabled={isSubmitting} className={formErrors.id_pakan ? 'input-error' : ''}>
+                    <option value="">-- Pilih Jenis Pakan --</option>
+                    {jenisList.map(j => <option key={j.id_pakan} value={j.id_pakan}>{j.nama_pakan} ({j.satuan})</option>)}
+                  </select>
+                  <ErrorText msg={formErrors.id_pakan} />
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div className="input-group" style={{ flex: 1 }}>
+                    <label htmlFor="f-jumlah">Jumlah</label>
+                    <input type="number" id="f-jumlah" name="jumlah" min="0" step="any" placeholder="0" value={form.jumlah} onChange={handleFormChange} disabled={isSubmitting} className={formErrors.jumlah ? 'input-error' : ''} />
+                    <ErrorText msg={formErrors.jumlah} />
+                  </div>
+                  <div className="input-group" style={{ flex: 1 }}>
+                    <label htmlFor="f-minimum">Stok Minimum</label>
+                    <input type="number" id="f-minimum" name="stok_minimum" min="0" step="any" placeholder="0" value={form.stok_minimum} onChange={handleFormChange} disabled={isSubmitting} className={formErrors.stok_minimum ? 'input-error' : ''} />
+                    <ErrorText msg={formErrors.stok_minimum} />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowForm(false)} className="btn-secondary" disabled={isSubmitting}>Batal</button>
+                <button type="submit" className="btn-action-primary" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? <><Loader2 size={14} style={{ animation: 'spin 0.9s linear infinite' }} /> Menyimpan...</>
+                    : editingStok ? <><CheckCircle size={14} strokeWidth={2} /> Perbarui</> : <><Plus size={14} strokeWidth={2.5} /> Simpan</>}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

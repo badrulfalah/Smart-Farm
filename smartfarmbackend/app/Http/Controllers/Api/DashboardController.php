@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Peternakan;
 use App\Models\Dashboard;
 use App\Models\Peringatan;
+use App\Models\StokPakan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -40,7 +41,15 @@ class DashboardController extends Controller
         $ternakSakit = $dashboards->sum('ternak_sakit');
         $jumlahPeringatan = $dashboards->sum('jumlah_peringatan');
         $stokPakan = $dashboards->sum('stok_pakan');
-        
+
+        // Total kandang (unit peternakan) yang dikelola user
+        $totalKandang = $farms->count();
+
+        // Jumlah entri stok pakan yang berada di bawah batas minimum (warning)
+        $stokPakanWarning = StokPakan::whereIn('id_peternakan', $farmIds)
+            ->whereColumn('jumlah', '<', 'stok_minimum')
+            ->count();
+
         // Find latest update time
         $latestUpdate = $dashboards->max('terakhir_update');
 
@@ -91,6 +100,8 @@ class DashboardController extends Controller
                     'total_ternak' => $totalTernak,
                     'ternak_sehat' => $ternakSehat,
                     'ternak_sakit' => $ternakSakit,
+                    'total_kandang' => $totalKandang,
+                    'stok_pakan_warning' => $stokPakanWarning,
                     'jumlah_peringatan' => $jumlahPeringatan,
                     'stok_pakan' => (float) $stokPakan,
                     'terakhir_update' => $latestUpdate ? $latestUpdate : null,

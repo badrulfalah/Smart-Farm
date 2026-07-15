@@ -217,6 +217,13 @@ const StatCard = ({ title, value, icon, accent, trend, trendLabel, suffix = '', 
           <span style={{ fontSize: '11px', color: colors.textFaint }}>{trendLabel}</span>
         </div>
       )}
+
+      {/* Trend label only (no percentage available yet) */}
+      {trend === undefined && trendLabel && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '11px', color: colors.textFaint, fontWeight: 500 }}>{trendLabel}</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -371,36 +378,39 @@ const Dashboard = () => {
 
   const { stats, recent_users, telemetry } = data;
 
+  /* ── STAT CARDS ──────────────────────────────
+     Total Hewan Ternak, Total Kandang, Stok Pakan
+     Menipis, dan Hewan Sakit — diambil dari field
+     `stats` hasil endpoint GET /dashboard/stats
+  ───────────────────────────────────────────── */
   const statCards = [
     {
-      title: 'Total Users',
-      value: stats?.total_users || 0,
-      icon: '👥',
-      accent: { bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.2)' },
-      trend: 12,
-      trendLabel: 'vs bulan lalu',
-    },
-    {
-      title: 'Total Roles',
-      value: stats?.total_roles || 0,
-      icon: '🔑',
-      accent: { bg: 'rgba(217,119,6,0.1)', border: 'rgba(217,119,6,0.2)' },
-      trend: 0,
-      trendLabel: 'tidak berubah',
-    },
-    {
-      title: 'Permissions',
-      value: stats?.total_permissions || 0,
-      icon: '🛡️',
-      accent: { bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.2)' },
-      trend: 5,
-      trendLabel: 'baru ditambahkan',
-    },
-    {
-      title: 'Farm Status',
-      value: stats?.farm_status || 'Optimal',
-      icon: '🌱',
+      title: 'Total Hewan Ternak',
+      value: stats?.total_ternak || 0,
+      icon: '🐄',
       accent: { bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.2)' },
+      trendLabel: 'seluruh peternakan',
+    },
+    {
+      title: 'Total Kandang',
+      value: stats?.total_kandang || 0,
+      icon: '🏠',
+      accent: { bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.2)' },
+      trendLabel: 'unit peternakan aktif',
+    },
+    {
+      title: 'Stok Pakan Menipis',
+      value: stats?.stok_pakan_warning || 0,
+      icon: '⚠️',
+      accent: { bg: 'rgba(217,119,6,0.1)', border: 'rgba(217,119,6,0.2)' },
+      trendLabel: 'di bawah batas minimum',
+    },
+    {
+      title: 'Hewan Sakit',
+      value: stats?.ternak_sakit || 0,
+      icon: '🚨',
+      accent: { bg: 'rgba(220,38,38,0.1)', border: 'rgba(220,38,38,0.2)' },
+      trendLabel: 'perlu penanganan',
     },
   ];
 

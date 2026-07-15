@@ -336,7 +336,7 @@ const Login = () => {
               <span>Smart Farm</span>
             </div>
             <div className="panel-tagline">
-              <h1>Pertanian cerdas dimulai dari sini.</h1>
+              <h1>Pertenak cerdas dimulai dari sini.</h1>
               <p>Kelola pengguna, atur hak akses, dan pantau sistem farm Anda dari satu dasbor terpusat.</p>
             </div>
             <div className="panel-stats">
